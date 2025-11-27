@@ -55,7 +55,7 @@ const GameLogo = ({ size = 'normal' }: { size?: 'normal' | 'large' | 'xl' }) => 
   } else if (size === 'xl') {
     // Reduced slightly from previous version to fit better
     containerSize = 'w-52 h-52 md:w-60 md:h-60'; // Responsive sizing
-    titleSize = 'text-2xl md:text-4xl';
+    titleSize = 'text-2xl md:text-3xl'; // Slightly adjusted for longer text
     subSize = 'text-xs md:text-lg';
     iconSize = 48;
   }
@@ -67,7 +67,7 @@ const GameLogo = ({ size = 'normal' }: { size?: 'normal' | 'large' | 'xl' }) => 
        <div className="absolute inset-3 rounded-full border border-blue-400/30"></div>
        
        <div className="text-yellow-500 font-bold tracking-[0.2em] mb-1 drop-shadow-md uppercase text-[8px] md:text-[10px] z-10">Azərbaycan</div>
-       <div className={`text-white font-extrabold ${titleSize} leading-none tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] uppercase font-serif z-10`}>Milyonçu</div>
+       <div className={`text-white font-extrabold ${titleSize} leading-none tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] uppercase font-serif z-10`}>Bilməcə Live</div>
        <div className={`text-yellow-400 font-bold ${subSize} mt-1 z-10`}>2026</div>
        
        <div className="absolute -bottom-5 text-yellow-500 animate-spin-slow opacity-100 filter drop-shadow-[0_0_15px_rgba(234,179,8,1)] z-20 bg-[#000040] rounded-full p-1.5 border-2 border-yellow-500">
@@ -476,7 +476,7 @@ const App: React.FC = () => {
                    Biliyinizi sınayın,
                  </p>
                  <p className="text-yellow-400 text-lg md:text-2xl font-bold italic tracking-widest drop-shadow-[0_2px_10px_rgba(234,179,8,0.5)] mt-2">
-                   Milyonçu olun!
+                   Bilməcə Live oynayın!
                  </p>
                </div>
             </div>
@@ -1001,7 +1001,7 @@ const App: React.FC = () => {
               <p className="text-lg text-red-300 mb-6 font-semibold shrink-0">Cavabınız səhvdir.</p>
             )}
 
-            {won && <p className="text-xl text-yellow-400 mb-6 font-medium shrink-0 shadow-yellow-500/50">Siz əsl Milyonçusunuz!</p>}
+            {won && <p className="text-xl text-yellow-400 mb-6 font-medium shrink-0 shadow-yellow-500/50">Siz əsl Bilməcə ustasısınız!</p>}
             
             <div className={`${cardClass} p-6 rounded-2xl border-2 border-yellow-600/50 w-full mb-8 shrink-0 bg-gradient-to-r from-[#000040] to-[#000060]`}>
               <div className="text-xs text-blue-300 uppercase mb-2 tracking-widest">Qazanılan Xal</div>
