@@ -43,8 +43,9 @@ export interface AudienceData {
 export interface User {
   username: string;
   password: string; // In a real app, this should be hashed
-  fullName: string;
-  dob: string;
+  name: string; // Changed from fullName
+  age: string;  // Changed from dob, storing as string for input compatibility
+  gender: 'Kişi' | 'Qadın' | ''; // New field
   totalPoints: number;
   completedTopics: string[]; // IDs of completed topics
   gamesPlayed: number;

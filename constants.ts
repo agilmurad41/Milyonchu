@@ -1,4 +1,3 @@
-
 import { Question, Topic, TopicInfo } from './types';
 import { Globe, BookOpen, Palette, Moon, Rocket, Clapperboard } from 'lucide-react';
 
@@ -26,7 +25,6 @@ const createQ = (text: string, options: string[], correct: number): Omit<Questio
 });
 
 // --- QUESTION DATABASE BY TOPIC ---
-// Expanded to ensure enough questions for unique gameplay
 const DB: Record<Topic, { easy: any[], medium: any[], hard: any[] }> = {
   COGRAFIYA: {
     easy: [
@@ -41,6 +39,16 @@ const DB: Record<Topic, { easy: any[], medium: any[], hard: any[] }> = {
       createQ("Şimal qütbündə hansı heyvan yaşayır?", ["Pinqvin", "Qütb Ayısı", "Şir", "Kenquru"], 1),
       createQ("İtaliyanın paytaxtı haradır?", ["Roma", "Milan", "Neapol", "Venesiya"], 0),
       createQ("Yer kürəsi Günəş ətrafında neçə günə fırlanır?", ["30", "180", "365", "1"], 2),
+      createQ("Azərbaycanın ən böyük gölü hansıdır?", ["Göygöl", "Xəzər dənizi", "Ağgöl", "Maral gölü"], 1),
+      createQ("Dünyanın ən uzun çayı hansıdır?", ["Nil", "Amazonka", "Volqa", "Dəclə"], 0),
+      createQ("Yaponiyanın paytaxtı haradır?", ["Seul", "Tokio", "Pekin", "Osaka"], 1),
+      createQ("Qızılqum və Qaraqum hansı materikdə yerləşir?", ["Asiya", "Afrika", "Avropa", "Amerika"], 0),
+      createQ("Azərbaycanın ən hündür dağı hansıdır?", ["Tufandağ", "Bazardüzü", "Şahdağ", "Qəmbərağa"], 1),
+      createQ("Azərbaycanın ən böyük çayı hansıdır?", ["Araz", "Kür", "Samur", "Tərtər"], 1),
+      createQ("Dünyanın ən böyük səhra adı nədir?", ["Qobi", "Sahara", "Kalahari", "Qızılqum"], 1),
+      createQ("Almaniyanın paytaxtı hansıdır?", ["Berlin", "Hamburq", "Frankfurt", "Bremen"], 0),
+      createQ("Avstraliya hansı tip ərazidir?", ["Ölkə", "Ada və Kontinent", "Şəhər", "Qitə deyil"], 1),
+      createQ("Dünyanın ən böyük qitəsi hansıdır?", ["Afrika", "Asiya", "Avropa", "Amerika"], 1),
     ],
     medium: [
       createQ("Azərbaycanın ən hündür zirvəsi hansıdır?", ["Bazardüzü", "Şahdağ", "Tufandağ", "Babadağ"], 0),
@@ -53,53 +61,111 @@ const DB: Record<Topic, { easy: any[], medium: any[], hard: any[] }> = {
       createQ("Avstraliyanın paytaxtı haradır?", ["Sidney", "Melburn", "Kanberra", "Brisben"], 2),
       createQ("Dünyanın ən böyük adası hansıdır?", ["Qrenlandiya", "Madaqaskar", "Böyük Britaniya", "Yaponiya"], 0),
       createQ("Hansı ölkə həm Asiyada, həm Avropada yerləşir?", ["Misir", "Rusiya", "İran", "Çin"], 1),
+      createQ("Himalay dağlarında yerləşən dünyanın ən hündür zirvəsi hansıdır?", ["Everest", "K2", "Kançencanqa", "Lhotse"], 0),
+      createQ("Sahara səhrası hansı qitədə yerləşir?", ["Asiya", "Afrika", "Avropa", "Cənubi Amerika"], 1),
+      createQ("Dünyanın ən böyük şəlalələr sistemi hansıdır?", ["İqvasu", "Niagara", "Anxel", "Viktoriya"], 0),
+      createQ("Yer kürəsinin mərkəzi əsasən nədən ibarətdir?", ["Qranit", "Buz", "Dəmir və nikel", "Qum və gil"], 2),
+      createQ("Hansı dəniz ən duzludur?", ["Qara dəniz", "Ölü dəniz", "Xəzər dənizi", "Qırmızı dəniz"], 1),
+      createQ("Dünyanın ən böyük yarımadası hansıdır?", ["Hindistan", "Skandinaviya", "Ərəbistan", "Kamçatka"], 2),
+      createQ("Qara dənizlə Aralıq dənizini birləşdirən boğaz hansıdır?", ["Bosfor", "Dardanel", "Gibraltar", "Kerç"], 0),
+      createQ("Hansı ölkənin ərazisi tamamilə And dağlarında yerləşir?", ["Çili", "Ekvador", "Boliviya", "Peru"], 2),
+      createQ("Amazonka çayı hansı okeana tökülür?", ["Hind", "Atlantik", "Sakit", "Şimal Buzlu"], 1),
+      createQ("Yer qabığının hərəkəti nəticəsində yaranan hadisə hansıdır?", ["Musson", "Tektonika", "Tsunami", "Buzlaq"], 1),
+      createQ("Türkiyə ilə Yunanıstan arasında yerləşən dəniz hansıdır?", ["Adriatik", "Egey", "İyon", "Qırmızı"], 1),
+      createQ("Kilimancaro dağı hansı ölkədə yerləşir?", ["Kenya", "Tanzaniya", "Efiopiya", "Cənubi Afrika"], 1),
     ],
     hard: [
-      createQ("Everest zirvəsinin hündürlüyü nə qədərdir (təxminən)?", ["8848 m", "8611 m", "8586 m", "8400 m"], 0),
-      createQ("Hansı ölkənin bayrağı kvadrat formasındadır?", ["Nepal", "İsveçrə", "Vatikan", "B və C"], 3),
-      createQ("Afrikanın ən böyük gölü hansıdır?", ["Tanqanika", "Viktoriya", "Nyasa", "Çad"], 1),
-      createQ("Antarktidadan başqa bütün qitələrdə mövcud olan səhra hansıdır?", ["Qobi", "Saxara", "Atakama", "Yoxdur"], 3),
-      createQ("Dünyanın ən uzun quru sərhədi hansı iki ölkə arasındadır?", ["Rusiya-Qazaxıstan", "ABŞ-Kanada", "Argentina-Çili", "Çin-Monqolustan"], 1),
-      createQ("Bakı hansı paralel üzərində yerləşir?", ["40-cı", "38-ci", "42-ci", "45-ci"], 0),
-      createQ("Hansı Cənubi Amerika ölkəsinin dənizə çıxışı yoxdur?", ["Peru", "Boliviya", "Çili", "Uruqvay"], 1),
-      createQ("Yer kürəsinin ən quraq yeri haradır?", ["Saxara səhrası", "Atakama səhrası", "Qobi səhrası", "Kalahari"], 1),
-      createQ("Himalay dağlarının mənası nədir?", ["Qar evi", "Allahlar dağı", "Uca zirvə", "Ağ daş"], 0),
+      createQ("Mariana çökəkliyinin dərinliyi təxminən neçə metrdir?", ["11 000 m", "8 500 m", "14 000 m", "9 200 m"], 0),
+      createQ("Nepal bayrağının qeyri-standart formaya malik olma səbəbi nədir?", ["Dini simvolizm", "Tarixi krallıq simgəsi", "Coğrafi şərait", "Heç biri"], 1),
+      createQ("Dünyanın ən böyük delta sistemi hansıdır?", ["Nil deltası", "Qanq-Brahmaputra deltası", "Amazon deltası", "Huangxe deltası"], 1),
+      createQ("Yer kürəsində ən az yağıntı alan yer haradır?", ["Şahra səhrası", "Atakama", "Namib", "Qobi"], 1),
+      createQ("Hansı ölkə ekvatoru, baş meridianı və cənub yarımkürəsini əhatə edir?", ["Keniya", "İndoneziya", "Sinqapur", "Qabon"], 0),
+      createQ("Dünyanın ən böyük yeraltı mağarası hansıdır?", ["Son Doong", "Mulu", "Lechuguilla", "Karaca"], 0),
+      createQ("Antarktida buzlaqlarının təxminən neçə faizi içməli sudur?", ["50%", "70%", "90%", "30%"], 2),
+      createQ("Rusiyanın ən şimaldakı qəzası/əyaləti hansıdır?", ["Çukotka", "Yakutiya", "Murmansk", "Kamçatka"], 0),
+      createQ("Tibet platosu nəyə görə məşhurdur?", ["Ən yüksək yayla", "Ən küləkli ərazi", "Ən çox vulkanlı zona", "Ən quraq yayla"], 0),
+      createQ("Erkən geoloji dövrdə mövcud olmuş super-qitənin adı nədir?", ["Laurasiya", "Pangea", "Gondvana", "Rodinia"], 1),
+      createQ("Hansı çay dünyanın ən geniş çay məcrasına malikdir?", ["Amazon", "Nil", "Yantszi", "Konqo"], 0),
+      createQ("Aralıq dənizində yerləşən ən böyük ada hansıdır?", ["Kipr", "Sitsiliya", "Sardiniya", "Kreta"], 1),
+      createQ("Kanadada rəsmi dil sayılan iki dil hansıdır?", ["İngilis və Alman", "İngilis və Fransız", "Fransız və İspan", "İngilis və İtalyan"], 1),
+      createQ("Bərpa olunan enerji üzrə lider olan ölkə hansıdır?", ["ABŞ", "İslandiya", "Norveç", "Çin"], 1),
+      createQ("Hansı ölkə ən çox aktiv vulkana malikdir?", ["Yaponiya", "İndoneziya", "Filippin", "Meksika"], 1),
+      createQ("Dünyanın ən sürətli küləkləri harada qeydə alınmışdır?", ["Everest", "Antarktida", "İzlandiya", "Sahara"], 1),
+      createQ("Yer qabığının orta qalınlığı neçə kilometrdir?", ["5–10 km", "30–50 km", "70–100 km", "100–120 km"], 1),
+      createQ("Qırmızı dəniz nə ilə məşhurdur?", ["Ən duzlu dənizdir", "Çox isti suları var", "Qırmızı yosunlarla zəngindir", "Ən dərin dənizdir"], 2),
+      createQ("Dünyanın ən böyük su ehtiyatı hansı formada saxlanılır?", ["Buzlaqlar", "Yeraltı su", "Çaylar və göllər", "Atmosfer suyu"], 0),
+      createQ("Pasifik Halqası nəyə görə tanınır?", ["Şiddətli zəlzələlər və vulkanizm", "Quraq iqlim", "Buzlaşma zonası", "Dünyanın ən böyük ada qrupları"], 0),
+      createQ("Hansı ölkə heç vaxt koloniyaya çevrilməyib?", ["Tailand", "Nepal", "İran", "Bütün cavablar"], 3),
     ]
   },
   TARIX: {
     easy: [
-      createQ("Azərbaycan Xalq Cümhuriyyəti neçənci ildə yaranıb?", ["1918", "1920", "1991", "1905"], 0),
-      createQ("II Dünya müharibəsi nə vaxt başlayıb?", ["1941", "1939", "1945", "1914"], 1),
-      createQ("Qarabağ xanlığının paytaxtı hansı şəhər olub?", ["Gəncə", "Şuşa", "Ağdam", "Bərdə"], 1),
-      createQ("Xilaskarlıq missiyası ilə tanınan milli lider kimdir?", ["Heydər Əliyev", "Məmməd Əmin Rəsulzadə", "Əbülfəz Elçibəy", "Nəriman Nərimanov"], 0),
-      createQ("Çanaqqala döyüşü hansı ildə baş verib?", ["1915", "1918", "1923", "1914"], 0),
-      createQ("Şah İsmayıl Xətai hansı dövlətin banisidir?", ["Eldənizlər", "Səfəvilər", "Qaraqoyunlu", "Şirvanşahlar"], 1),
-      createQ("Misir ehramları kimlər üçün tikilirdi?", ["Fironlar", "Kahinlər", "Əsgərlər", "Xalq"], 0),
-      createQ("SSRİ neçənci ildə dağıldı?", ["1989", "1990", "1991", "1993"], 2),
-      createQ("Atropatena dövləti harada yerləşirdi?", ["Cənubi Azərbaycan", "Şimali Azərbaycan", "Gürcüstan", "Türkiyə"], 0),
-      createQ("Çingiz xan hansı imperiyanın qurucusudur?", ["Osmanlı", "Monqol", "Hun", "Səlcuqlu"], 1),
+      createQ("Şah İsmayıl Xətai hansı sülalənin banisidir?", ["Səfəvilər", "Qaraqoyunlu", "Osmanlı", "Şirvanşahlar"], 0),
+      createQ("Roma imperatorları hansı titul daşıyırdı?", ["Kral", "Firon", "Sezar", "Şah"], 2),
+      createQ("Piramidalar hansı ölkədə yerləşir?", ["Misir", "Meksika", "Çin", "Hindistan"], 0),
+      createQ("Qədim Azərbaycan ərazisində hansı dövlət mövcud olub?", ["Səfəvilər", "Şirvanşahlar", "Atropatena", "Manna"], 3),
+      createQ("Osmanlı imperiyasının dini nə idi?", ["İslam", "Budizm", "Xristianlıq", "Yahudilik"], 0),
+      createQ("Dünya tarixində ilk yazı harada yaranıb?", ["Misir", "Çin", "Mesopotamiya", "Hindistan"], 2),
+      createQ("II Dünya müharibəsi hansı ildən başlamışdır?", ["1939", "1945", "1941", "1930"], 0),
+      createQ("Makedoniyalı İsgəndərin atası kim idi?", ["II Filip", "Dara", "Kserks", "Kir"], 0),
+      createQ("Qədim Roma hansı materikdə yerləşirdi?", ["Asiya", "Avropa", "Afrika", "Amerika"], 1),
+      createQ("Orta əsrlərdə Avropada məqsədi din uğrunda olan yürüşlərə nə deyilir?", ["Səlib yürüşləri", "İnkvizisiya", "Yürüşlər", "Yurd müharibəsi"], 0),
+      createQ("Azərbaycan Xalq Cümhuriyyəti nə qədər yaşamışdır?", ["23 ay", "5 il", "3 il", "1 ay"], 0),
+      createQ("Qədim insanların əsas məşğuliyyəti nə idi?", ["Ticarət", "Əkinçilik", "Ovçuluq", "Kənd Təsərrüfatı"], 2),
+      createQ("Heykəllər və məbədlərlə məşhur olan qədim şəhər?", ["Roma", "Afina", "Babil", "Qahirə"], 1),
+      createQ("Səfəvi dövləti ilk paytaxtı haradır?", ["Təbriz", "Qəzvin", "İsfahan", "Ərdəbil"], 0),
+      createQ("Qızıl Orda dövlətinə kim rəhbərlik etmişdir?", ["Çingiz xan", "Batu xan", "Tamerlan", "Xətai"], 1),
+      createQ("Çingiz xan hansı xalqdan idi?", ["Türk", "Monqol", "Fars", "Slavyan"], 1),
+      createQ("Qədim yunanlar hansı idman oyununu yaratdı?", ["Olimpiya", "Futbol", "Güləş", "Karate"], 0),
+      createQ("Vikinglər hansı regionun sakinləri idi?", ["Skandinaviya", "Asiya", "Afrika", "Amerika"], 0),
+      createQ("Ən qədim dövlət idarə forması hansıdır?", ["Monarxiya", "Respublika", "Demokratiya", "Əmirlik"], 0),
+      createQ("Hitler hansı ölkəyə rəhbərlik etmişdir?", ["Almaniya", "İtaliya", "Fransa", "Avstriya"], 0),
+      createQ("Roma imperiyası hansı dildə danışırdı?", ["Latın", "Yunan", "Fransız", "İngilis"], 0),
     ],
     medium: [
-      createQ("Gülüstan müqaviləsi neçənci ildə imzalanıb?", ["1813", "1828", "1801", "1804"], 0),
-      createQ("Napoleon Bonapart əslən hansı millətdəndir?", ["Fransız", "Korsikalı", "İtalyan", "İspan"], 1),
-      createQ("Böyük İpək Yolu haradan başlayırdı?", ["Hindistan", "Çin", "Bizans", "Misir"], 1),
-      createQ("Azərbaycanın BMT-yə qəbul olunduğu tarix?", ["1991", "1992", "1993", "1995"], 1),
-      createQ("Tomris xatun kimin başını kəsdirmişdi?", ["Makedoniyalı İsgəndər", "II Kir", "Dari", "Kserks"], 1),
-      createQ("Osmanlı imperiyasının ən uzun ömürlü sultanı kimdir?", ["Süleyman Qanuni", "Fateh Sultan Mehmet", "Yavuz Sultan Səlim", "II Əbdülhəmid"], 0),
-      createQ("Türkmançay müqaviləsi kimlər arasında imzalanıb?", ["Rusiya-İran", "Rusiya-Türkiyə", "İran-Türkiyə", "İngiltərə-İran"], 0),
-      createQ("Babək hansı hərəkata rəhbərlik edib?", ["Hürrəmilər", "Məzdəkilər", "Cəlalilər", "Səfəvilər"], 0),
-      createQ("Qarabağ xanlığının əsasını kim qoyub?", ["Pənahəli xan", "İbrahimxəlil xan", "Nadir şah", "Kərim xan"], 0),
+      createQ("Türkmançay müqaviləsi neçə il imzalanmışdır?", ["1828", "1813", "1723", "1801"], 0),
+      createQ("Böyük İpək yolunun əsas mərkəzlərindən biri?", ["Səmərqənd", "Buxara", "Naxçıvan", "Şuşa"], 0),
+      createQ("Atropatena adını haradan alır?", ["Hakim Atropat", "Şah Isgəndər", "Qədim tayfa", "Mitoloji obraz"], 0),
+      createQ("Təbriz ilk dəfə hansı sülalənin paytaxtı olub?", ["Səfəvilər", "Qaraqoyunlu", "Şirvanşahlar", "Sasanilər"], 1),
+      createQ("Azərbaycan dilinin rəsmi status aldığı il:", ["1995", "1992", "1978", "2000"], 1),
+      createQ("Monqol imperiyasının ən böyük ərazisi hansı əsrdə idi?", ["XII", "XIII", "XIV", "XI"], 1),
+      createQ("Koroğlu hansı dövrdə yaşamışdır?", ["XVI əsr", "XV əsr", "XIV əsr", "XVII əsr"], 0),
+      createQ("Ən qədim məbədlərdən biri - Göbəklitəpə haradadır?", ["Türkiyə", "İraq", "Misir", "İran"], 0),
+      createQ("Qədim Misirdə yazı sistemi necə adlanırdı?", ["Hieroqlif", "Run", "Mixi", "Sanskrit"], 0),
+      createQ("Roma imperiyasını iki hissəyə bölən əmr?", ["Diokletian", "Konstantin", "Neron", "Sezar"], 0),
+      createQ("Qacarlar dövləti harada yaranmışdır?", ["İran", "Türkiyə", "Azərbaycan", "Əfqanıstan"], 0),
+      createQ("Babək məğlub olduğu döyüş yeri?", ["Bəzz qalası", "Dəbil", "Tərtər", "Mərənd"], 0),
+      createQ("İslam dünyasının ilk universitetlərindən biri?", ["Əl-Əzhər", "Bagdad", "Qurtuba", "Şam"], 0),
+      createQ("Fateh Sultan Mehmet İstanbul şəhərini neçə ildə fəth edib?", ["1453", "1458", "1481", "1435"], 0),
+      createQ("Spartak hansı döyüşdə məşhur üsyan etmişdir?", ["Qladiator üsyanı", "Səlib yürüşü", "Vikinqlər üsyanı", "Pirat döyüşü"], 0),
+      createQ("Şumerlər hansı ixtiraya görə məşhurdur?", ["Təkər", "Kompas", "Pul", "Atəş"], 0),
+      createQ("Təbrizin 'İlk Azərbaycan türkcəsi rəsmi dili' statusu hansı sülalədə?", ["Səfəvi", "Şirvanşahlar", "Əfşar", "Qacar"], 0),
+      createQ("Berlin divarı nə vaxt yıxıldı?", ["1989", "1991", "1981", "1995"], 0),
+      createQ("Napoleon hansı döyüşdə məğlub olmuşdur?", ["Waterloo", "Paris", "Roma", "Neftçi"], 0),
+      createQ("Şah Abbas hansı şəhəri paytaxt etdi?", ["İsfahan", "Təbriz", "Qəzvin", "Şiraz"], 0),
+      createQ("Amerika qitəsini kim kəşf edib?", ["Kolumb", "Vasko da Qama", "Maqellan", "Cook"], 0),
     ],
     hard: [
-      createQ("Albaniya hökmdarı Cavanşir hansı sülalədən idi?", ["Arşakilər", "Mihranilər", "Sasanilər", "Ruriklər"], 1),
-      createQ("100 illik müharibə hansı ölkələr arasında olub?", ["İngiltərə-Fransa", "Almaniya-Fransa", "İspaniya-İngiltərə", "Rusiya-Osmanlı"], 0),
-      createQ("'Dəmir Ledi' ləqəbli siyasətçi kimdir?", ["İndira Qandi", "Marqaret Tetçer", "Angela Merkel", "Benazir Bhutto"], 1),
-      createQ("Azərbaycan Səfəvilər dövlətində paytaxt olmamış şəhər?", ["Təbriz", "Qəzvin", "İsfahan", "Ərdəbil"], 3),
-      createQ("ABŞ-ın ilk prezidenti kim olub?", ["Linkoln", "Vaşinqton", "Cefferson", "Adams"], 1),
-      createQ("Nadir şah Əfşar neçənci ildə tacqoyma mərasimi keçirdi?", ["1736", "1747", "1722", "1730"], 0),
-      createQ("Şirvanşahlar dövləti neçənci ildə süqut etdi?", ["1501", "1538", "1192", "1258"], 1),
-      createQ("Roma imperiyası neçənci ildə iki hissəyə parçalandı?", ["395", "476", "330", "1453"], 0),
-      createQ("Azıx mağarasını kim kəşf edib?", ["Məmmədəli Hüseynov", "İshaq Cəfərzadə", "Vəli Əliyev", "Qüdrət İsmayılov"], 0),
+      createQ("Səfəvilər dövlətinin rəsmi məzhəbi nə idi?", ["Şiəlik", "Sünnilik", "Katoliklik", "Ortodoks"], 0),
+      createQ("Nadir Şah hansı döyüşdə Osmanlı ilə mübarizə aparmışdır?", ["Bağdad", "Naxçıvan", "Mərənd", "Gəncə"], 1),
+      createQ("Ərəb xilafəti ən geniş ərazisinə hansı dövrdə çatdı?", ["Əməvilər", "Abbasilər", "Rəşidilər", "Fatimilər"], 0),
+      createQ("Xəzər xaqanlığı hansı dinə məxsus idi?", ["Yəhudilik", "İslam", "Xristianlıq", "Budizm"], 0),
+      createQ("Kimmerlərin Azərbaycan ərazisində izləri hansı əsrdədir?", ["VIII-VII", "IV-III", "I", "X"], 0),
+      createQ("Atropatenanın paytaxtı?", ["Qazaka", "Həmədan", "Təbriz", "Maraga"], 0),
+      createQ("Ən qədim türkcə yazılı abidələr hansı əsrdəndir?", ["VIII əsr", "X əsr", "XIV əsr", "IX əsr"], 0),
+      createQ("Mesopotamya sözü nə deməkdir?", ["İki çay arası", "İsti torpaq", "Su ölkəsi", "Bərəkətli ova"], 0),
+      createQ("Hind-Ari tayfaları hansı bölgəyə gəlmişdir?", ["Hindistan", "İran", "Mərkəzi Asiya", "Çin"], 0),
+      createQ("Şah İsmayılın 'Dəqiq məhkəməsi' kimi tanınan qanunları?", ["Kəmaləddin nizamı", "Dəsturül-əməl", "Təzkirətül-mülk", "Tövhidnamə"], 1),
+      createQ("Babəkə qarşı yürüşlərə rəhbərlik etmiş sərkərdə?", ["Afşin", "Məmun", "Əl-Mansur", "Mütəsim"], 0),
+      createQ("Hunların Avropadakı ən məşhur hökmdarı?", ["Atilla", "Bumin", "Köl Tigin", "Əfşin"], 0),
+      createQ("Səlib yürüşləri neçə il davam etmişdir?", ["1096-1291", "1110-1300", "1000-1200", "1096-1220"], 0),
+      createQ("Böyük Moğol imperiyasını kim qurmuşdur?", ["Babur", "Akbar", "Tamerlan", "Humayun"], 0),
+      createQ("Roma imperiyasında bərpa dövrü hansı adla tanınırdı?", ["Renessans", "Bərpa dövrü", "Dominat", "Respublica nova"], 2),
+      createQ("Azərbaycanın ilk konstitusiyası neçə ildə qəbul olunub?", ["1995", "1991", "1993", "1999"], 0),
+      createQ("Sasanilər ilə Bizans arasında əsas mübarizə səbəbi?", ["Ticarət yolları", "Din", "Torpaq mübahisəsi", "Vergi sistemi"], 0),
+      createQ("Monqol darmadağınına uğramış dövlət?", ["Xarəzmşahlar", "Sasanilər", "Misir Xilafəti", "Oğuzlar"], 0),
+      createQ("Aşşur hökmdarları nə ilə məşhur idi?", ["Qəddarlıq və hərb", "Elm və dini", "Ticarət", "Sənətkarlıq"], 0),
+      createQ("Manna dövlətinin əsas məşğuliyyəti?", ["Kənd təsərrüfatı", "Metallurgiya", "Ticarət", "Heyvandarlıq"], 3),
     ]
   },
   INCESENET: {
@@ -124,139 +190,116 @@ const DB: Record<Topic, { easy: any[], medium: any[], hard: any[] }> = {
     ],
     hard: [
       createQ("Azərbaycanın ilk professional qadın rəssamı kimdir?", ["Maral Rəhmanzadə", "Vəcihə Səmədova", "Qeysər Kaşıyeva", "Elmira Şahtaxtinskaya"], 2),
-      createQ("Bethovenin kar olduğu halda bəstələdiyi simfoniya?", ["3-cü", "5-ci", "9-cu", "7-ci"], 2),
-      createQ("'Qızıl Alma' mükafatı hansı sahədə verilir?", ["Musiqi", "Kino", "Memarlıq", "Turizm jurnalistikası"], 3),
-      createQ("Qobustan qayaüstü rəsmlərini ilk dəfə kim aşkar edib?", ["İshaq Cəfərzadə", "Əliövsət Quliyev", "Məşədi Əzizbəyov", "Həsən Əliyev"], 0),
-      createQ("Venera Milos heykəli hansı muzeydədir?", ["Luvr", "Ermitaj", "Vatikan", "Britaniya Muzeyi"], 0),
-      createQ("Üzeyir Hacıbəyli 'Koroğlu' operasını neçənci ildə tamamlayıb?", ["1937", "1913", "1908", "1945"], 0),
-      createQ("Salvador Dalinin məşhur 'Əriyən Saatlar' əsərinin əsl adı nədir?", ["Yaddaşın əzmi", "Zamanın axışı", "Yuxu", "Sürreal saatlar"], 0),
+      createQ("Bethovenin kar olduğu halda bəstələdiyi simfoniya?", ["5-ci", "9-cu", "3-cü", "7-ci"], 1),
+      createQ("Azərbaycanın ilk baleti hansıdır?", ["Yeddi Gözəl", "Qız qalası", "Babək", "Min bir gecə"], 1),
+      createQ("İntibah dövrü harada yaranmışdır?", ["Fransa", "İtaliya", "Yunanıstan", "İspaniya"], 1),
+      createQ("Pikasso hansı cərəyanın banisidir?", ["Kubizm", "İmpressionizm", "Sürrealizm", "Futurizm"], 0),
+      createQ("Vaqif Mustafazadə hansı janrın banisidir?", ["Caz-Muğam", "Pop", "Rok", "Simfonik Muğam"], 0),
     ]
   },
   DIN: {
     easy: [
-      createQ("İslam dininin müqəddəs kitabı hansıdır?", ["Tövrat", "Zəbur", "İncil", "Quran"], 3),
-      createQ("Müsəlmanların gündə neçə dəfə namaz qılması vacibdir?", ["3", "4", "5", "7"], 2),
-      createQ("Həzrəti Məhəmməd (s.ə.s) hansı şəhərdə doğulub?", ["Mədinə", "Məkkə", "Qüds", "Bağdad"], 1),
-      createQ("Oruc hansı ayda tutulur?", ["Məhərrəm", "Ramazan", "Şəvval", "Rəcəb"], 1),
-      createQ("İsa peyğəmbərin anasının adı nədir?", ["Xədicə", "Aişə", "Məryəm", "Fatimə"], 2),
-      createQ("İlk insan və ilk peyğəmbər kimdir?", ["Adəm", "İbrahim", "Nuh", "Musa"], 0),
-      createQ("Nuh peyğəmbər nə ilə tanınır?", ["Gəmi düzəltməsi", "Odda yanmaması", "Dənizi yarması", "Balığın qarnında yaşaması"], 0),
+      createQ("İslam dininin müqəddəs kitabı hansıdır?", ["Quran", "Tövrat", "İncil", "Zəbur"], 0),
+      createQ("Müsəlmanların ibadət evi necə adlanır?", ["Məscid", "Kilsə", "Sinaqoq", "Məbəd"], 0),
+      createQ("İslamın neçə şərti var?", ["3", "5", "7", "4"], 1),
+      createQ("Sonuncu peyğəmbər kimdir?", ["Musa", "İsa", "Məhəmməd", "Davud"], 2),
+      createQ("Ramazan ayında nə edilir?", ["Qurban kəsilir", "Oruc tutulur", "Həccə gedilir", "Zəkat verilir"], 1),
     ],
     medium: [
-      createQ("Qurani-Kərim neçə surədən ibarətdir?", ["110", "114", "124", "99"], 1),
-      createQ("Kəbə evini ilk dəfə kim inşa edib?", ["Hz. İbrahim", "Hz. Adəm", "Hz. Məhəmməd", "Hz. Musa"], 1),
-      createQ("Zəmzəm suyu harada yerləşir?", ["Qüds", "Mədinə", "Məkkə", "Kərbəla"], 2),
-      createQ("İncil hansı peyğəmbərə nazil olub?", ["İsa", "Musa", "Davud", "İbrahim"], 0),
-      createQ("Hicri təqvimi hansı hadisədən başlayır?", ["Peyğəmbərin doğumu", "Vəhy gəlməsi", "Məkkədən Mədinəyə köç", "Məkkənin fəthi"], 2),
-      createQ("Hz. Əlinin qılıncının adı nədir?", ["Zülfüqar", "Zülqərneyn", "Bədr", "Ühüd"], 0),
-      createQ("Qurani-Kərimdə adı keçən yeganə qadın kimdir?", ["Həvva", "Asiya", "Məryəm", "Sara"], 2),
+      createQ("Qurani-Kərim neçə surədən ibarətdir?", ["114", "110", "120", "100"], 0),
+      createQ("Kəbə evi harada yerləşir?", ["Mədinə", "Məkkə", "Qüds", "Bağdad"], 1),
+      createQ("Həzrəti Məhəmmədin (s.ə.s) anasının adı nədir?", ["Xədicə", "Fatimə", "Əminə", "Həlimə"], 2),
+      createQ("İlk vəhy harada gəlmişdir?", ["Hira mağarası", "Kəbə", "Uhud dağı", "Mədinə"], 0),
+      createQ("Zəmzəm suyu haradan çıxır?", ["Məkkə", "Mədinə", "Qüds", "Nəcəf"], 0),
     ],
     hard: [
-      createQ("Əshabi-Kəhf (Mağara adamları) hadisəsi harada baş verib (rəvayətə görə)?", ["Misir", "İordaniya/Türkiyə/Naxçıvan", "Səudiyyə Ərəbistanı", "İraq"], 1),
-      createQ("Hz. Yusif hansı peyğəmbərin oğlu idi?", ["İshaq", "İsmayıl", "Yaqub", "Yunus"], 2),
-      createQ("Quranın 'Qəlbi' adlanan surə hansıdır?", ["Fatihə", "Yasin", "Bəqərə", "Rəhman"], 1),
-      createQ("Tövratın digər adı nədir?", ["Əhdi-Cədid", "Əhdi-Ətiq", "Səhifələr", "Furqan"], 1),
-      createQ("Xəndək döyüşü neçənci ildə baş verib?", ["624", "625", "627", "630"], 2),
-      createQ("Peyğəmbərimizin (s.ə.s) süd anası kim olub?", ["Əminə", "Həlimə", "Süveybə", "Barakə"], 1),
-      createQ("Hansı surə 'Bismillah'sız başlayır?", ["Tövbə", "Yasin", "Mülk", "Kəhf"], 0),
+      createQ("Uhud döyüşü neçənci ildə baş vermişdir?", ["624", "625", "630", "622"], 1),
+      createQ("Quranın ən uzun surəsi hansıdır?", ["Ali-İmran", "Maidə", "Bəqərə", "Nisa"], 2),
+      createQ("İlk xəlifə kim olmuşdur?", ["Əli", "Ömər", "Əbubəkr", "Osman"], 2),
+      createQ("Mədinəyə hicrət hansı ildə olub?", ["622", "610", "632", "600"], 0),
+      createQ("Təbük döyüşü kimlərə qarşı olmuşdur?", ["Məkkəlilərə", "Bizansa", "Sasanilərə", "Yəhudilərə"], 1),
     ]
   },
   FANTASTIK: {
     easy: [
-      createQ("Supermenin zəif nöqtəsi nədir?", ["Gümüş", "Kriptonit", "Günəş işığı", "Su"], 1),
-      createQ("Harri Potterin oxuduğu məktəb?", ["Hogvarts", "Oksford", "Kembric", "Azqaban"], 0),
-      createQ("Spiderman-in əsl adı nədir?", ["Klark Kent", "Brus Ueyn", "Piter Parker", "Toni Stark"], 2),
-      createQ("Üzüklərin Hökmdarı filmində üzüyü kim daşıyır?", ["Qandalf", "Araqorn", "Frodo", "Leqolas"], 2),
-      createQ("Betmenin yaşadığı şəhər?", ["Metropolis", "Qotem", "Nyu York", "Çikaqo"], 1),
-      createQ("Dəmir Adam kimdir?", ["Stiv Rocers", "Toni Stark", "Brus Banner", "Tor"], 1),
-      createQ("Transformes filmindəki avtobotların lideri?", ["Meqatron", "Optimus Praym", "Bamblbi", "Star Skrim"], 1),
+      createQ("Supermen hansı planetdən gəlib?", ["Mars", "Kripton", "Venera", "Saturn"], 1),
+      createQ("Hörümçək adamın əsl adı nədir?", ["Peter Parker", "Bruce Wayne", "Tony Stark", "Clark Kent"], 0),
+      createQ("Harri Potterin oxuduğu məktəb?", ["Hogwarts", "Harvard", "Oksford", "Yel"], 0),
+      createQ("Üzüklərin hökmdarı filmindəki balaca adamlar?", ["Hobbitlər", "Elflər", "Orklar", "Qnomlar"], 0),
+      createQ("Betmenin yaşadığı şəhər?", ["Metropolis", "Gotham", "New York", "Chicago"], 1),
     ],
     medium: [
-      createQ("'Dune' əsərindəki əsas planet hansıdır?", ["Tatuin", "Arrakis", "Mars", "Pandora"], 1),
-      createQ("Frankenşteynin müəllifi kimdir?", ["Meri Şelli", "Brem Stoker", "H.Q. Uells", "Jül Vern"], 0),
-      createQ("Marvel kainatında 'Qisasçılar'ın ilk düşməni kim olub?", ["Tanos", "Loki", "Ultron", "Qırmızı Kəllə"], 1),
-      createQ("Ulduz Müharibələrində 'Güc'ün qaranlıq tərəfində kimdir?", ["Yoda", "Obi-Van", "Dart Veyder", "Luk Skayvolker"], 2),
-      createQ("Matrix filmində Neonun seçdiyi həb hansı rəngdə idi?", ["Göy", "Yaşıl", "Qırmızı", "Sarı"], 2),
-      createQ("Avatar filmindəki yerli xalq necə adlanır?", ["Na'vi", "Ewok", "Klinqon", "Vulkanlı"], 0),
-      createQ("'Buz və Od Nəğməsi' (Taxtların Oyunu) müəllifi kimdir?", ["J.R.R. Tolkien", "George R.R. Martin", "J.K. Rowling", "Stephen King"], 1),
+      createQ("Ulduz müharibələrindəki pis personaj kimdir?", ["Darth Vader", "Yoda", "Luke", "Han Solo"], 0),
+      createQ("Matrix filmindəki baş qəhrəman?", ["Neo", "Morpheus", "Trinity", "Smith"], 0),
+      createQ("Torun silahı nədir?", ["Qılınc", "Çəkic", "Ox", "Qalxan"], 1),
+      createQ("Dəmir Adamın kostyumunu kim düzəldib?", ["Tony Stark", "Bruce Banner", "Steve Rogers", "Nick Fury"], 0),
+      createQ("Avatar filmindəki yerlilər necə adlanır?", ["Na'vi", "Klingon", "Vulkan", "Jedi"], 0),
     ],
     hard: [
-      createQ("Ayzek Asimovun 'Robototexnikanın Üç Qanunu'nda birinci qanun nədir?", ["Robot insanı öldürə bilməz", "Robot insan əmrinə tabe olmalıdır", "Robot özünü qorumalıdır", "Robot yalan danışmamalıdır"], 0),
-      createQ("'1984' romanında hər şeyi görən şəxs kimdir?", ["Böyük Qardaş", "Goldstein", "O'Brien", "Uinston"], 0),
-      createQ("X-Men komandasının qurucusu kimdir?", ["Maqneto", "Çarlz Xavier", "Vulverin", "Siklop"], 1),
-      createQ("Torun çəkicinin adı nədir?", ["Mjolnir", "Qunqnir", "Stormbreaker", "Aeqis"], 0),
-      createQ("H.Q. Uellsin 'Zaman Maşını' neçənci ildə yazılıb?", ["1895", "1905", "1880", "1920"], 0),
-      createQ("Üzüklərin Hökmdarında 'Qondor'un simvolu nədir?", ["Ağ Ağac", "Qırmızı Əjdaha", "Qara Qartal", "Qızıl Şir"], 0),
-      createQ("Yura Dövrü Parkının yaradıcısı (personaj) kimdir?", ["Con Hammond", "Alan Qrant", "Yan Malkolm", "Ellie Sattler"], 0),
+      createQ("Doktor Kim (Doctor Who) serialında zaman maşınının adı?", ["TARDIS", "DeLorean", "Enterprise", "Serenity"], 0),
+      createQ("Deyv Consun gəmisi necə adlanır?", ["Qara İnci", "Uçan Hollandiyalı", "Kraliça Anna", "Sakit Meri"], 1),
+      createQ("Frankenşteynin müəllifi kimdir?", ["Mary Shelley", "Bram Stoker", "H.G. Wells", "Jules Verne"], 0),
+      createQ("H.G. Wells-in yazdığı zaman səyahəti romanı?", ["Zaman Maşını", "Dünyalar müharibəsi", "Görünməz adam", "Doktor Moro"], 0),
+      createQ("Asimovun robot qanunları neçə dənədir?", ["3", "4", "5", "2"], 0),
     ]
   },
   FILM: {
     easy: [
-      createQ("Titanik gəmisi nə ilə toqquşdu?", ["Qaya", "Aysberq", "Başqa gəmi", "Ada"], 1),
-      createQ("Şrek cizgi filmindəki eşşəyin ən yaxın dostu kimdir?", ["Fiona", "Şrek", "Əjdaha", "Kral"], 1),
-      createQ("'Evdə Tək' filminin qəhrəmanının adı?", ["Kevin", "Con", "Mayk", "Harri"], 0),
-      createQ("Ceyms Bondun kod nömrəsi neçədir?", ["001", "005", "007", "777"], 2),
-      createQ("Simba hansı cizgi filminin qəhrəmanıdır?", ["Mauqli", "Kral Şir", "Bambi", "Madaqaskar"], 1),
-      createQ("Hansı filmdə dinozavrlar var?", ["Yura Dövrü Parkı", "Titanik", "Avatar", "Terminator"], 0),
-      createQ("Harri Potter filmlərində baş qəhrəman kimdir?", ["Ron", "Hermiona", "Harri", "Dambldor"], 2),
+      createQ("Titanik gəmisinin batdığı il?", ["1912", "1905", "1920", "1899"], 0),
+      createQ("Şrek hansı heyvandır?", ["Oqr", "Əjdaha", "Eşşək", "Qurbağa"], 0),
+      createQ("Ceyms Bondun kod nömrəsi?", ["007", "001", "911", "112"], 0),
+      createQ("Kral Şir cizgi filminin baş qəhrəmanı?", ["Simba", "Mufasa", "Timon", "Pumba"], 0),
+      createQ("Evdə Tək filminin baş qəhrəmanı?", ["Kevin", "Harri", "Marv", "Buzz"], 0),
     ],
     medium: [
-      createQ("Oskar mükafatı hansı ölkədə verilir?", ["İngiltərə", "Fransa", "ABŞ", "İtaliya"], 2),
-      createQ("'Xaç Atası' (Godfather) filmində Don Korleone rolunu kim oynayıb?", ["Al Paçino", "Robert De Niro", "Marlon Brando", "Joe Pesci"], 2),
-      createQ("Azərbaycan kinosunda 'Qayınana' filmində Cənnət xalanı kim oynayıb?", ["Nəsibə Zeynalova", "Hökümə Qurbanova", "Leyla Bədirbəyli", "Barat Şəkinskaya"], 0),
-      createQ("Tarantinonun məşhur filmi: 'Pulp ___'.", ["Story", "Fiction", "Movie", "Drama"], 1),
-      createQ("Hollivud hansı şəhərdə yerləşir?", ["Nyu York", "Los Anceles", "Çikaqo", "Mayami"], 1),
-      createQ("Hansı Azərbaycan filmi 'Oskara' namizəd olub (Long list)?", ["Nabat", "Dolu", "Fəryad", "Hökmdarın taleyi"], 0),
-      createQ("Brus Li hansı döyüş növü ustası idi?", ["Karate", "Cüdo", "Kunq-Fu", "Boks"], 2),
+      createQ("Oskar mükafatı hansı sahədə verilir?", ["Musiqi", "Kino", "Teatr", "Ədəbiyyat"], 1),
+      createQ("Terminator filmindəki məşhur fraza?", ["I'll be back", "Hello World", "Goodbye", "Hasta la vista"], 0),
+      createQ("Xaç atası filminin rejissoru?", ["Coppola", "Spielberg", "Tarantino", "Scorsese"], 0),
+      createQ("Pulp Fiction filminin rejissoru?", ["Tarantino", "Nolan", "Cameron", "Fincher"], 0),
+      createQ("Jokerin düşməni kimdir?", ["Betmen", "Supermen", "Fleym", "Akvamen"], 0),
     ],
     hard: [
-      createQ("Ən çox Oskar alan film hansıdır (11 Oskar)?", ["Titanik", "Avatar", "Xaç Atası", "Ulduz Müharibələri"], 0),
-      createQ("Çarli Çaplinin ilk səsli filmi hansıdır?", ["Böyük Diktator", "Müasir dövrlər", "Uşaq", "Qızıl Hərisliyi"], 0),
-      createQ("'Bəxt üzüyü' filmində 'Moşu' obrazını kim canlandırıb?", ["Yaşar Nuri", "Hacı İsmayılov", "Səyavuş Aslan", "Valeh Kərimov"], 3),
-      createQ("Kann Film Festivalının baş mükafatı nədir?", ["Qızıl Qlobus", "Qızıl Ayı", "Qızıl Palma Budağı", "Oskar"], 2),
-      createQ("İlk rəngli Azərbaycan bədii filmi hansıdır?", ["O olmasın, bu olsun", "Koroğlu", "Arşın mal alan", "Görüş"], 0),
-      createQ("Hansı rejissor 'Dəhşət janrının kralı' sayılır?", ["Spilberq", "Hiçkok", "Kubrik", "Nolan"], 1),
-      createQ("'Şindler'in Siyahısı' filmi hansı hadisədən bəhs edir?", ["Soyqırım (Holokost)", "Vyetnam müharibəsi", "Böyük Depressiya", "Soyuq Müharibə"], 0),
+      createQ("Tarixdə ən çox Oskar alan film?", ["Titanik", "Avatar", "Üzüklərin Hökmdarı", "Ben-Hur"], 3),
+      createQ("İlk səsli film hansı ildə çəkilib?", ["1927", "1930", "1920", "1915"], 0),
+      createQ("Hitchcock-un məşhur qorxu filmi?", ["Psycho", "Birds", "Vertigo", "Rear Window"], 0),
+      createQ("Azərbaycanın ilk rəngli bədii filmi?", ["O olmasın, bu olsun", "Arşın mal alan", "Görüş", "Koroğlu"], 0),
+      createQ("Kann festivalının baş mükafatı?", ["Qızıl Palma", "Qızıl Şir", "Oskar", "Qızıl Ayı"], 0),
     ]
-  }
+  },
 };
 
-// Utility to shuffle an array
-const shuffle = <T>(array: T[]): T[] => {
-  return [...array].sort(() => Math.random() - 0.5);
-};
-
-// Function to generate a new game session based on TOPIC
-// IMPROVED: Now accepts a list of IDs (question texts) to exclude to prevent repetition
 export const getQuestionsByTopic = (topic: Topic, seenQuestions: string[] = []): Question[] => {
-  const pool = DB[topic];
-  
-  // We use the question text as the unique ID for simplicity
-  const filterUnseen = (qs: any[]) => qs.filter(q => !seenQuestions.includes(q.text));
+  const topicData = DB[topic];
+  const { easy, medium, hard } = topicData;
 
-  let availableEasy = filterUnseen(pool.easy);
-  let availableMedium = filterUnseen(pool.medium);
-  let availableHard = filterUnseen(pool.hard);
+  const getUnseen = (pool: any[]) => pool.filter(q => !seenQuestions.includes(q.text));
 
-  // If we run out of unseen questions, fill with seen ones but shuffled
-  if (availableEasy.length < 4) availableEasy = [...availableEasy, ...shuffle(pool.easy)].slice(0, 10);
-  if (availableMedium.length < 3) availableMedium = [...availableMedium, ...shuffle(pool.medium)].slice(0, 10);
-  if (availableHard.length < 3) availableHard = [...availableHard, ...shuffle(pool.hard)].slice(0, 10);
+  // If we run out of unseen questions, we might reuse some, 
+  // but let's try to get unseen first.
+  let availEasy = getUnseen(easy);
+  let availMedium = getUnseen(medium);
+  let availHard = getUnseen(hard);
 
-  // 10 Questions Total: 4 Easy, 3 Medium, 3 Hard
-  const selectedEasy = shuffle(availableEasy).slice(0, 4);
-  const selectedMedium = shuffle(availableMedium).slice(0, 3);
-  const selectedHard = shuffle(availableHard).slice(0, 3);
+  // Fallback if not enough questions (shuffle and reuse if needed)
+  if (availEasy.length < 4) availEasy = easy; 
+  if (availMedium.length < 3) availMedium = medium;
+  if (availHard.length < 3) availHard = hard;
+
+  // Shuffle arrays
+  const shuffle = (arr: any[]) => [...arr].sort(() => 0.5 - Math.random());
   
-  const allSelected = [...selectedEasy, ...selectedMedium, ...selectedHard];
-  
-  return allSelected.map((q, index) => ({
-    ...q,
+  const selectedEasy = shuffle(availEasy).slice(0, 4);
+  const selectedMedium = shuffle(availMedium).slice(0, 3);
+  const selectedHard = shuffle(availHard).slice(0, 3);
+
+  const gameQuestions = [...selectedEasy, ...selectedMedium, ...selectedHard];
+
+  // Map to Question type with ID and Prize
+  return gameQuestions.map((q, index) => ({
     id: index + 1,
+    text: q.text,
+    options: q.options,
+    correctAnswerIndex: q.correctAnswerIndex,
     prize: PRIZE_LADDER[index]
   }));
-};
-
-export const getTimerForLevel = (levelIndex: number): number => {
-  return 30; // Fixed 30 seconds per request
 };

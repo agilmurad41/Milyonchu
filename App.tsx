@@ -87,12 +87,19 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   
   // Auth Form States
-  const [authForm, setAuthForm] = useState({ username: '', password: '', fullName: '', dob: '' });
+  const [authForm, setAuthForm] = useState({ 
+    username: '', 
+    password: '', 
+    name: '', 
+    age: '',
+    gender: '' as 'Kişi' | 'Qadın' | '' 
+  });
   const [authError, setAuthError] = useState<string | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   
   // Validation States
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'valid' | 'taken'>('idle');
+  const [passwordStatus, setPasswordStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   
   // Game State
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
@@ -116,7 +123,11 @@ const App: React.FC = () => {
   const [isTreeOpen, setIsTreeOpen] = useState(false);
 
   // Profile Edit State
-  const [editProfileForm, setEditProfileForm] = useState({ fullName: '', dob: '' });
+  const [editProfileForm, setEditProfileForm] = useState({ 
+    name: '', 
+    age: '',
+    gender: '' as 'Kişi' | 'Qadın' | '' 
+  });
   const [profileSaveStatus, setProfileSaveStatus] = useState<'idle' | 'saved'>('idle');
 
   const isDark = theme === 'dark';
@@ -153,6 +164,19 @@ const App: React.FC = () => {
 
   }, [authForm.username]);
 
+  // Password validation effect
+  useEffect(() => {
+    if (!authForm.password) {
+      setPasswordStatus('idle');
+      return;
+    }
+    if (authForm.password.length >= 5 && authForm.password.length <= 10) {
+      setPasswordStatus('valid');
+    } else {
+      setPasswordStatus('invalid');
+    }
+  }, [authForm.password]);
+
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -170,12 +194,16 @@ const App: React.FC = () => {
       setAuthError("Şifrə 5 ilə 10 simvol arasında olmalıdır.");
       return;
     }
-    if (!authForm.fullName.trim()) {
-        setAuthError("Ad və soyad daxil edilməlidir.");
+    if (!authForm.name.trim()) {
+        setAuthError("Ad daxil edilməlidir.");
         return;
     }
-    if (!authForm.dob) {
-        setAuthError("Doğum tarixi daxil edilməlidir.");
+    if (!authForm.age.trim()) {
+        setAuthError("Yaş daxil edilməlidir.");
+        return;
+    }
+    if (!authForm.gender) {
+        setAuthError("Cins seçilməlidir.");
         return;
     }
 
@@ -184,8 +212,9 @@ const App: React.FC = () => {
     const newUser: User = {
       username: authForm.username,
       password: authForm.password,
-      fullName: authForm.fullName,
-      dob: authForm.dob,
+      name: authForm.name,
+      age: authForm.age,
+      gender: authForm.gender,
       totalPoints: 0,
       completedTopics: [],
       gamesPlayed: 0,
@@ -203,7 +232,7 @@ const App: React.FC = () => {
     setRegistrationSuccess(false);
     // After registration, go to AUTH_CHOICE which will show the logged-in menu
     setGameStatus(GameStatus.AUTH_CHOICE);
-    setAuthForm({ username: '', password: '', fullName: '', dob: '' });
+    setAuthForm({ username: '', password: '', name: '', age: '', gender: '' });
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -214,11 +243,16 @@ const App: React.FC = () => {
     const foundUser = users.find(u => u.username === authForm.username && u.password === authForm.password);
 
     if (foundUser) {
-      // Legacy support: add seenQuestions if missing
+      // Legacy support: add missing fields if user from old version
       if (!foundUser.seenQuestions) foundUser.seenQuestions = [];
+      // If name/age/gender missing (legacy), provide defaults or empty strings so profile can fix
+      if (!foundUser.name && (foundUser as any).fullName) foundUser.name = (foundUser as any).fullName;
+      if (!foundUser.age && (foundUser as any).dob) foundUser.age = ""; 
+      if (!foundUser.gender) foundUser.gender = "" as any;
+
       setCurrentUser(foundUser);
       setGameStatus(GameStatus.AUTH_CHOICE); // Go to Main Home (Logged In State)
-      setAuthForm({ username: '', password: '', fullName: '', dob: '' });
+      setAuthForm({ username: '', password: '', name: '', age: '', gender: '' });
     } else {
       setAuthError("İstifadəçi adı və ya şifrə yanlışdır.");
     }
@@ -285,8 +319,9 @@ const App: React.FC = () => {
     if (userIndex !== -1) {
        const updatedUser = { 
          ...users[userIndex],
-         fullName: editProfileForm.fullName,
-         dob: editProfileForm.dob
+         name: editProfileForm.name,
+         age: editProfileForm.age,
+         gender: editProfileForm.gender
        };
        users[userIndex] = updatedUser;
        localStorage.setItem('milyoncu_users_db', JSON.stringify(users));
@@ -298,7 +333,11 @@ const App: React.FC = () => {
 
   const openProfile = () => {
     if (!currentUser) return;
-    setEditProfileForm({ fullName: currentUser.fullName, dob: currentUser.dob });
+    setEditProfileForm({ 
+      name: currentUser.name, 
+      age: currentUser.age,
+      gender: currentUser.gender 
+    });
     setPreviousStatus(gameStatus); // Remember where we came from
     // If playing, pause timer
     if (gameStatus === GameStatus.PLAYING) {
@@ -486,7 +525,7 @@ const App: React.FC = () => {
                {isLoggedIn && (
                   <div className="text-center animate-fade-in bg-[#000040]/50 p-4 rounded-2xl border border-blue-500/20 backdrop-blur-sm shadow-xl w-full max-w-xs mx-auto">
                      <p className={`text-[10px] text-blue-300 mb-2 uppercase tracking-[0.2em] font-bold`}>Xoş gəldin</p>
-                     <h2 className="text-xl md:text-2xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] mb-3 truncate">{currentUser.fullName}</h2>
+                     <h2 className="text-xl md:text-2xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] mb-3 truncate">{currentUser.name}</h2>
                      <div className="flex items-center justify-center gap-2 text-yellow-400 bg-[#000030] px-5 py-2 rounded-full border border-yellow-600/50 mx-auto w-fit shadow-[0_0_15px_rgba(234,179,8,0.2)]">
                         <Trophy size={18} className="text-yellow-500" />
                         <span className="font-bold text-base md:text-lg">{currentUser.totalPoints} xal</span>
@@ -581,7 +620,7 @@ const App: React.FC = () => {
                         {idx + 1}
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-bold text-white text-sm">{u.fullName}</span>
+                        <span className="font-bold text-white text-sm">{u.name}</span>
                         <span className="text-[10px] text-slate-400">{u.username}</span>
                       </div>
                    </div>
@@ -614,23 +653,37 @@ const App: React.FC = () => {
           </div>
           
           <div>
-             <label className="text-xs text-blue-300 block mb-1">Ad və Soyad</label>
+             <label className="text-xs text-blue-300 block mb-1">Ad</label>
              <input 
               type="text" 
-              value={editProfileForm.fullName}
-              onChange={e => setEditProfileForm({...editProfileForm, fullName: e.target.value})}
+              value={editProfileForm.name}
+              onChange={e => setEditProfileForm({...editProfileForm, name: e.target.value})}
               className={`w-full p-3 rounded-lg border outline-none focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all ${inputClass}`}
             />
           </div>
           
-          <div>
-             <label className="text-xs text-blue-300 block mb-1">Doğum tarixi</label>
-             <input 
-              type="date" 
-              value={editProfileForm.dob}
-              onChange={e => setEditProfileForm({...editProfileForm, dob: e.target.value})}
-              className={`w-full p-3 rounded-lg border outline-none focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all ${inputClass}`}
-            />
+          <div className="flex gap-3">
+             <div className="flex-1">
+                <label className="text-xs text-blue-300 block mb-1">Yaşınız</label>
+                <input 
+                  type="number" 
+                  value={editProfileForm.age}
+                  onChange={e => setEditProfileForm({...editProfileForm, age: e.target.value})}
+                  className={`w-full p-3 rounded-lg border outline-none focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all ${inputClass}`}
+                />
+             </div>
+             <div className="flex-1">
+                <label className="text-xs text-blue-300 block mb-1">Cins</label>
+                <select 
+                  value={editProfileForm.gender}
+                  onChange={e => setEditProfileForm({...editProfileForm, gender: e.target.value as any})}
+                  className={`w-full p-3 rounded-lg border outline-none focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all ${inputClass}`}
+                >
+                  <option value="">Seçin</option>
+                  <option value="Kişi">Kişi</option>
+                  <option value="Qadın">Qadın</option>
+                </select>
+             </div>
           </div>
 
           <Button type="submit" fullWidth className="py-2 flex items-center justify-center gap-2 bg-green-700 hover:bg-green-600 border-green-500">
@@ -724,28 +777,50 @@ const App: React.FC = () => {
                   </div>
               )}
 
-              <input 
-                type="password" 
-                placeholder="Şifrə (5-10 simvol)"
-                value={authForm.password}
-                onChange={e => setAuthForm({...authForm, password: e.target.value})}
-                className={`w-full p-3 rounded-lg border outline-none focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] ${inputClass}`}
-              />
+              <div className="relative">
+                 <input 
+                  type="password" 
+                  placeholder="Şifrə (5-10 simvol)"
+                  value={authForm.password}
+                  onChange={e => setAuthForm({...authForm, password: e.target.value})}
+                  className={`w-full p-3 rounded-lg border outline-none focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] ${inputClass} pr-8`}
+                />
+                 <div className="absolute right-3 top-3">
+                   {authForm.password.length > 0 && (
+                      passwordStatus === 'valid' 
+                      ? <Check className="text-green-500" size={16} />
+                      : passwordStatus === 'invalid' ? <X className="text-red-500" size={16} /> : null
+                   )}
+                </div>
+              </div>
+
                <input 
                 type="text" 
-                placeholder="Ad və soyad"
-                value={authForm.fullName}
-                onChange={e => setAuthForm({...authForm, fullName: e.target.value})}
+                placeholder="Ad"
+                value={authForm.name}
+                onChange={e => setAuthForm({...authForm, name: e.target.value})}
                 className={`w-full p-3 rounded-lg border outline-none focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] ${inputClass}`}
               />
-              <input 
-                type="date" 
-                placeholder="Doğum tarixi"
-                value={authForm.dob}
-                onChange={e => setAuthForm({...authForm, dob: e.target.value})}
-                className={`w-full p-3 rounded-lg border outline-none focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] ${inputClass}`}
-              />
-              <Button type="submit" fullWidth disabled={usernameStatus === 'taken'} className="py-2 text-base mt-2 bg-gradient-to-r from-blue-700 to-blue-600 hover:from-blue-600 hover:to-blue-500">Qeydiyyatdan keç</Button>
+              <div className="flex gap-2">
+                 <input 
+                  type="number" 
+                  placeholder="Yaşınız"
+                  value={authForm.age}
+                  onChange={e => setAuthForm({...authForm, age: e.target.value})}
+                  className={`w-1/2 p-3 rounded-lg border outline-none focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] ${inputClass}`}
+                />
+                 <select 
+                   value={authForm.gender} 
+                   onChange={e => setAuthForm({...authForm, gender: e.target.value as any})}
+                   className={`w-1/2 p-3 rounded-lg border outline-none focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] ${inputClass}`}
+                 >
+                    <option value="">Cins</option>
+                    <option value="Kişi">Kişi</option>
+                    <option value="Qadın">Qadın</option>
+                 </select>
+              </div>
+
+              <Button type="submit" fullWidth disabled={usernameStatus === 'taken' || passwordStatus === 'invalid'} className="py-2 text-base mt-2 bg-gradient-to-r from-blue-700 to-blue-600 hover:from-blue-600 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">Qeydiyyatdan keç</Button>
             </form>
             <Button variant="secondary" fullWidth onClick={() => setGameStatus(GameStatus.AUTH_CHOICE)} className="mt-3 py-2 text-sm bg-transparent border border-slate-600 hover:bg-slate-800">Geri qayıt</Button>
           </div>
@@ -759,10 +834,10 @@ const App: React.FC = () => {
       <header className="flex justify-between items-center mb-2 shrink-0">
          <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-800/80 rounded-full flex items-center justify-center text-white font-bold text-base shadow-[0_0_15px_rgba(59,130,246,0.5)] border-2 border-blue-400">
-               {currentUser?.fullName.charAt(0)}
+               {currentUser?.name.charAt(0)}
             </div>
             <div>
-               <div className="font-bold text-sm text-white drop-shadow-md">{currentUser?.fullName}</div>
+               <div className="font-bold text-sm text-white drop-shadow-md">{currentUser?.name}</div>
                <div className={`text-[10px] text-blue-300 uppercase tracking-wide`}>Ümumi xal: <span className="text-yellow-400 font-bold">{currentUser?.totalPoints}</span></div>
             </div>
          </div>
@@ -862,7 +937,7 @@ const App: React.FC = () => {
              className="w-14 h-14 bg-blue-800 rounded-full flex items-center justify-center font-bold text-xl border-2 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.6)] text-white hover:scale-105 transition-transform"
              title="Profil"
            >
-              {currentUser?.fullName.charAt(0)}
+              {currentUser?.name.charAt(0)}
            </button>
         </header>
 
