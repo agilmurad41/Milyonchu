@@ -1,0 +1,66 @@
+
+export interface Question {
+  id: number;
+  text: string;
+  options: string[]; // Array of 4 strings
+  correctAnswerIndex: number; // 0-3
+  prize: string;
+}
+
+export enum GameStatus {
+  AUTH_CHOICE = 'AUTH_CHOICE',
+  LOGIN = 'LOGIN',
+  REGISTER = 'REGISTER',
+  TOPIC_SELECTION = 'TOPIC_SELECTION',
+  SETTINGS = 'SETTINGS',
+  PLAYING = 'PLAYING',
+  WON = 'WON',
+  LOST = 'LOST',
+  PROFILE = 'PROFILE',
+  LEADERBOARD = 'LEADERBOARD'
+}
+
+export enum AnswerState {
+  IDLE = 'IDLE',
+  SELECTED = 'SELECTED',
+  CORRECT = 'CORRECT',
+  WRONG = 'WRONG',
+}
+
+export interface Lifelines {
+  fiftyFifty: boolean;
+  askAudience: boolean;
+  askAI: boolean;
+}
+
+export interface AudienceData {
+  A: number;
+  B: number;
+  C: number;
+  D: number;
+}
+
+export interface User {
+  username: string;
+  password: string; // In a real app, this should be hashed
+  fullName: string;
+  dob: string;
+  totalPoints: number;
+  completedTopics: string[]; // IDs of completed topics
+  gamesPlayed: number;
+  seenQuestions: string[]; // List of question texts already answered correctly
+}
+
+export type Topic = 'COGRAFIYA' | 'TARIX' | 'INCESENET' | 'DIN' | 'FANTASTIK' | 'FILM';
+
+export interface TopicInfo {
+  id: Topic;
+  label: string;
+  icon: string; // Icon name or component identifier
+  description: string;
+  color: string; // Tailwind color name (e.g., 'blue', 'red')
+}
+
+export interface ImageCache {
+  [questionText: string]: string; // Maps question text to base64 image string
+}
