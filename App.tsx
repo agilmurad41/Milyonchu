@@ -669,13 +669,7 @@ const App: React.FC = () => {
 
     return (
       <div className="flex flex-col h-full w-full relative z-10 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-        {/* NEW: Top Right Privacy Button - VISIBLE */}
-        <div className="absolute top-4 right-4 z-[60]">
-            <button onClick={() => setShowPrivacyModal(true)} className="flex items-center justify-center p-2.5 bg-yellow-500/20 rounded-full text-yellow-400 hover:text-white border border-yellow-500 hover:bg-yellow-500 backdrop-blur-md transition-all shadow-lg hover:shadow-yellow-500/40 animate-pulse-slow" title="Məxfilik Siyasəti">
-                <Shield size={22} fill="currentColor" className="text-yellow-500 hover:text-white" />
-            </button>
-        </div>
-
+        
         <div className="flex flex-col min-h-full w-full justify-between">
             <div className="flex flex-col items-center w-full">
                 <div className="flex flex-col items-center justify-center pt-16 md:pt-24 shrink-0 relative z-20 px-4">
@@ -921,10 +915,7 @@ const App: React.FC = () => {
            <div><label className="text-blue-300 text-xs uppercase font-bold ml-1 mb-1 block">Şifrə</label><input type="password" value={authForm.password} onChange={e => setAuthForm({...authForm, password: e.target.value})} className="w-full bg-slate-800/80 border border-blue-500/30 rounded-lg p-3 text-white focus:border-blue-400 outline-none transition-colors" placeholder="Password" /></div>
            <Button type="submit" fullWidth disabled={isAuthLoading} className="mt-4">{isAuthLoading ? 'Gözləyin...' : 'Daxil ol'}</Button>
          </form>
-         <div className="mt-6 flex flex-col gap-2 text-center">
-            <button onClick={() => setGameStatus(GameStatus.AUTH_CHOICE)} className="text-slate-400 hover:text-white text-sm underline">Geri qayıt</button>
-            <button onClick={() => setShowPrivacyModal(true)} className="text-slate-500 hover:text-slate-300 text-xs">Məxfilik Siyasəti</button>
-         </div>
+         <div className="mt-6 text-center"><button onClick={() => setGameStatus(GameStatus.AUTH_CHOICE)} className="text-slate-400 hover:text-white text-sm underline">Geri qayıt</button></div>
       </div>
     </div>
   );
@@ -971,10 +962,7 @@ const App: React.FC = () => {
                </div>
                <Button type="submit" fullWidth disabled={isAuthLoading} className="mt-4 bg-fuchsia-700 hover:bg-fuchsia-600 border-fuchsia-500">{isAuthLoading ? 'Gözləyin...' : 'Qeydiyyatdan keç'}</Button>
              </form>
-             <div className="mt-4 flex flex-col gap-2 text-center">
-                <button onClick={() => setGameStatus(GameStatus.AUTH_CHOICE)} className="text-slate-400 hover:text-white text-sm underline">Geri qayıt</button>
-                <button onClick={() => setShowPrivacyModal(true)} className="text-slate-500 hover:text-slate-300 text-xs">Məxfilik Siyasəti</button>
-             </div>
+             <div className="mt-4 text-center"><button onClick={() => setGameStatus(GameStatus.AUTH_CHOICE)} className="text-slate-400 hover:text-white text-sm underline">Geri qayıt</button></div>
            </>
          ) : (
            <div className="text-center py-8 animate-fade-in">
