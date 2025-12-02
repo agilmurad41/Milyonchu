@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getQuestionsByTopic, TOPICS } from './constants';
 import { GameStatus, AnswerState, Lifelines, AudienceData, User, Question, Topic } from './types';
@@ -213,6 +212,39 @@ const TRANSLATIONS = {
   }
 };
 
+// --- BACKGROUND PARTICLES COMPONENT ---
+const BackgroundParticles = React.memo(() => {
+  // Use useMemo to generate random values only once per mount
+  const particles = React.useMemo(() => Array.from({ length: 18 }).map((_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    size: Math.random() * 5 + 3, // 3px to 8px
+    duration: Math.random() * 15 + 15, // 15s to 30s
+    delay: Math.random() * 20,
+    opacity: Math.random() * 0.4 + 0.1
+  })), []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      {particles.map(p => (
+        <div
+          key={p.id}
+          className="absolute rounded-full bg-blue-400 blur-[1px]"
+          style={{
+            left: p.left,
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            bottom: '-20px',
+            opacity: p.opacity,
+            animation: `rise ${p.duration}s infinite linear`,
+            animationDelay: `-${p.delay}s`
+          }}
+        />
+      ))}
+    </div>
+  );
+});
+
 // Custom Logo Component
 const GameLogo = ({ size = 'normal' }: { size?: 'normal' | 'large' | 'xl' }) => {
   // Dynamic Sizes
@@ -248,7 +280,7 @@ const GameLogo = ({ size = 'normal' }: { size?: 'normal' | 'large' | 'xl' }) => 
          </div>
        </div>
        
-       <div className="absolute -bottom-5 text-yellow-500 animate-spin-slow opacity-100 filter drop-shadow-[0_0_15px_rgba(234,179,8,1)] z-20 bg-[#000040] rounded-full p-1.5 border-2 border-yellow-500">
+       <div className="absolute -bottom-5 text-yellow-500 animate-float opacity-100 filter drop-shadow-[0_0_15px_rgba(234,179,8,1)] z-20 bg-[#000040] rounded-full p-1.5 border-2 border-yellow-500">
          <Gem size={iconSize} />
        </div>
     </div>
@@ -840,14 +872,14 @@ const App: React.FC = () => {
       <div className="flex flex-col h-full w-full relative z-10 overflow-y-auto [&::-webkit-scrollbar]:hidden">
         <div className="flex flex-col min-h-full w-full justify-between">
             <div className="flex flex-col items-center w-full">
-                <div className="flex flex-col items-center justify-center pt-16 md:pt-24 shrink-0 relative z-20 px-4">
+                <div className="flex flex-col items-center justify-center pt-16 md:pt-24 shrink-0 relative z-20 px-4 animate-zoom-in" style={{ animationDelay: '0.1s' }}>
                    <div className="scale-105 md:scale-110"><GameLogo size="xl" /></div>
-                   <div className="mt-10 md:mt-12 text-center z-30 px-4">
+                   <div className="mt-10 md:mt-12 text-center z-30 px-4 animate-fade-in-up" style={{ animationDelay: '0.4s', opacity: 0, animationFillMode: 'forwards' }}>
                      <p className="text-blue-100 text-sm md:text-base font-bold tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t.slogan1}</p>
                      <p className="text-yellow-600 text-lg md:text-xl font-black tracking-widest drop-shadow-[0_2px_10px_rgba(234,179,8,0.5)]">{t.slogan2}</p>
                    </div>
                 </div>
-                <div className="flex justify-between items-center px-6 w-full max-w-sm mx-auto gap-4 mt-4">
+                <div className="flex justify-between items-center px-6 w-full max-w-sm mx-auto gap-4 mt-4 animate-slide-in-right" style={{ animationDelay: '0.6s', opacity: 0, animationFillMode: 'forwards' }}>
                    <div className="flex-1 flex flex-col justify-center px-3 py-2 bg-[#000030]/80 border border-blue-600 rounded-xl shadow-[0_0_10px_rgba(37,99,235,0.3)] min-h-[50px] relative overflow-hidden group">
                       <div className="absolute inset-0 bg-blue-600/10 group-hover:bg-blue-600/20 transition-colors"></div>
                       <div className="flex items-center gap-2 relative z-10">
@@ -868,7 +900,7 @@ const App: React.FC = () => {
             {/* Welcome User Section - HORIZONTAL LAYOUT */}
             <div className="flex-1 flex flex-col items-center justify-center w-full px-4 py-2 min-h-[60px]">
                {isLoggedIn && (
-                  <div className="flex items-center justify-between w-full max-w-xs mx-auto bg-[#000040]/80 p-3 rounded-xl border border-blue-500/30 backdrop-blur-md shadow-lg animate-fade-in mb-2 gap-3">
+                  <div className="flex items-center justify-between w-full max-w-xs mx-auto bg-[#000040]/80 p-3 rounded-xl border border-blue-500/30 backdrop-blur-md shadow-lg animate-bounce-in mb-2 gap-3" style={{ animationDelay: '0.3s' }}>
                      <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shrink-0 border border-blue-400 shadow-inner">
                            {currentUser.name.charAt(0).toUpperCase()}
@@ -886,7 +918,7 @@ const App: React.FC = () => {
                )}
             </div>
 
-            <div className="w-full px-6 pb-4 md:pb-6 flex flex-col items-center shrink-0 max-w-xs mx-auto z-20">
+            <div className="w-full px-6 pb-4 md:pb-6 flex flex-col items-center shrink-0 max-w-xs mx-auto z-20 animate-slide-in-up" style={{ animationDelay: '0.8s', opacity: 0, animationFillMode: 'forwards' }}>
                <div className="w-full flex flex-col gap-3">
                
                {/* Language Switcher moved here */}
@@ -1428,9 +1460,11 @@ const App: React.FC = () => {
   return (
     <div className={`fixed inset-0 h-[100dvh] w-full overflow-hidden flex flex-col transition-colors duration-500 ${bgClass}`}>
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] bg-[radial-gradient(circle,rgba(30,64,175,0.25)_0%,transparent_65%)] blur-xl"></div>
-         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80vw] h-[60vh] bg-[conic-gradient(from_180deg_at_50%_100%,transparent_35%,rgba(59,130,246,0.15)_50%,transparent_65%)] blur-3xl"></div>
+         {/* Enhanced Background Gradients & Particles */}
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] bg-[radial-gradient(circle,rgba(30,64,175,0.25)_0%,transparent_65%)] blur-xl animate-pulse-slow"></div>
+         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80vw] h-[60vh] bg-[conic-gradient(from_180deg_at_50%_100%,transparent_35%,rgba(59,130,246,0.15)_50%,transparent_65%)] blur-3xl animate-pulse-slow" style={{ animationDelay: '-1.5s' }}></div>
          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]"></div>
+         <BackgroundParticles />
          <div className="absolute inset-0 bg-[radial-gradient(transparent_40%,#020210_100%)]"></div>
       </div>
       <div className="flex-1 relative z-10 w-full h-full overflow-hidden font-sans">
