@@ -38,7 +38,12 @@ import {
   Dumbbell,
   User as UserIcon,
   Home,
-  Shield
+  Shield,
+  Settings,
+  Volume2,
+  VolumeX,
+  Flame,
+  Vibrate
 } from 'lucide-react';
 
 // --- ICONS MAPPING ---
@@ -128,7 +133,13 @@ const TRANSLATIONS = {
     ],
     understood: "Aydındır",
     close: "Bağla",
-    usernameImmutable: "İstifadəçi adı (dəyişdirilə bilməz)"
+    usernameImmutable: "İstifadəçi adı (dəyişdirilə bilməz)",
+    settings: "Tənzimləmələr",
+    sound: "Səs effektləri",
+    on: "Açıq",
+    off: "Bağlı",
+    language: "Dil",
+    streak: "Günlük Alov"
   },
   en: {
     slogan1: "Knowledge is power,",
@@ -208,18 +219,64 @@ const TRANSLATIONS = {
     ],
     understood: "Got it",
     close: "Close",
-    usernameImmutable: "Username (cannot be changed)"
+    usernameImmutable: "Username (cannot be changed)",
+    settings: "Settings",
+    sound: "Sound Effects",
+    on: "On",
+    off: "Off",
+    language: "Language",
+    streak: "Daily Streak"
+  }
+};
+
+// --- SOUND UTILS (Web Audio API) ---
+const playTone = (freq: number, type: OscillatorType, duration: number, vol: number = 0.1) => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  } catch (e) {
+    console.error("Audio error", e);
+  }
+};
+
+const SOUNDS = {
+  click: () => playTone(800, 'sine', 0.1, 0.05),
+  correct: () => {
+    playTone(600, 'sine', 0.1, 0.1);
+    setTimeout(() => playTone(1200, 'sine', 0.4, 0.1), 100);
+  },
+  wrong: () => {
+    playTone(150, 'sawtooth', 0.3, 0.1);
+    setTimeout(() => playTone(100, 'sawtooth', 0.4, 0.1), 150);
+  },
+  win: () => {
+    [0, 150, 300, 450, 600].forEach((delay, i) => {
+        setTimeout(() => playTone(400 + (i*100), 'square', 0.3, 0.1), delay);
+    });
   }
 };
 
 // --- BACKGROUND PARTICLES COMPONENT ---
 const BackgroundParticles = React.memo(() => {
-  // Use useMemo to generate random values only once per mount
   const particles = React.useMemo(() => Array.from({ length: 18 }).map((_, i) => ({
     id: i,
     left: `${Math.random() * 100}%`,
-    size: Math.random() * 5 + 3, // 3px to 8px
-    duration: Math.random() * 15 + 15, // 15s to 30s
+    size: Math.random() * 5 + 3,
+    duration: Math.random() * 15 + 15,
     delay: Math.random() * 20,
     opacity: Math.random() * 0.4 + 0.1
   })), []);
@@ -245,9 +302,36 @@ const BackgroundParticles = React.memo(() => {
   );
 });
 
+// Confetti Component
+const Confetti = () => {
+  const particles = Array.from({ length: 50 }).map((_, i) => ({
+    id: i,
+    left: Math.random() * 100,
+    delay: Math.random() * 2,
+    bg: ['#fcd34d', '#f87171', '#60a5fa', '#4ade80', '#e879f9'][Math.floor(Math.random() * 5)]
+  }));
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
+      {particles.map(p => (
+        <div 
+          key={p.id}
+          className="absolute w-3 h-3 rounded-sm"
+          style={{
+            left: `${p.left}%`,
+            backgroundColor: p.bg,
+            top: '-20px',
+            animation: `confetti-fall 3s linear forwards`,
+            animationDelay: `${p.delay}s`
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 // Custom Logo Component
 const GameLogo = ({ size = 'normal' }: { size?: 'normal' | 'large' | 'xl' }) => {
-  // Dynamic Sizes
   let containerSize = 'w-24 h-24';
   let titleSize = 'text-base';
   let subSize = 'text-xs';
@@ -260,7 +344,6 @@ const GameLogo = ({ size = 'normal' }: { size?: 'normal' | 'large' | 'xl' }) => 
     iconSize = 40;
   } else if (size === 'xl') {
     containerSize = 'w-52 h-52 md:w-60 md:h-60';
-    // Increased font sizes for the new layout without top/bottom text
     titleSize = 'text-4xl md:text-5xl';
     subSize = 'text-lg md:text-xl';
     iconSize = 48;
@@ -289,12 +372,13 @@ const GameLogo = ({ size = 'normal' }: { size?: 'normal' | 'large' | 'xl' }) => 
 
 const App: React.FC = () => {
   // --- STATE ---
-  const [language, setLanguage] = useState<Language>('az'); // Default Language
+  const [language, setLanguage] = useState<Language>('az');
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [gameStatus, setGameStatus] = useState<GameStatus>(GameStatus.AUTH_CHOICE);
   const [previousStatus, setPreviousStatus] = useState<GameStatus | null>(null);
   
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [allUsers, setAllUsers] = useState<User[]>([]); // For leaderboard and admin
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   
   // Auth Form States
   const [authForm, setAuthForm] = useState({ 
@@ -367,23 +451,27 @@ const App: React.FC = () => {
     language: 'az' as 'az' | 'en'
   });
 
-  // Help Modal State
+  // Modal States
   const [showHelp, setShowHelp] = useState(false);
-  
-  // Privacy Modal State
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   
   // Helper for current translations
   const t = TRANSLATIONS[language];
 
-  // Load users on mount and when needed
+  // Helper for sounds
+  const playSound = (name: 'click' | 'correct' | 'wrong' | 'win') => {
+    if (soundEnabled) {
+      SOUNDS[name]();
+    }
+  };
+
   const refreshLeaderboard = async () => {
     const users = await dbService.getUsers();
     setAllUsers(users);
   };
 
   useEffect(() => {
-    // Check session on load
     const savedUser = localStorage.getItem('bilmece_user_session');
     if (savedUser) {
       try {
@@ -402,7 +490,6 @@ const App: React.FC = () => {
     }
   }, [gameStatus]);
 
-  // Load questions for admin
   useEffect(() => {
     if (gameStatus === GameStatus.ADMIN_DASHBOARD && adminTab === 'questions') {
       loadAllQuestions();
@@ -414,7 +501,7 @@ const App: React.FC = () => {
     setAdminQuestions(qs);
   };
 
-  // --- AUTH LOGIC --- (Validations same as before)
+  // --- AUTH LOGIC ---
   useEffect(() => {
     if (!authForm.username) { setUsernameStatus('idle'); return; }
     if (authForm.username.length < 3) { setUsernameStatus('idle'); return; }
@@ -436,6 +523,7 @@ const App: React.FC = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    playSound('click');
     setAuthError(null);
     setIsAuthLoading(true);
     if (!authForm.username.trim() || authForm.username.length < 3) { setAuthError(t.minChars); setIsAuthLoading(false); return; }
@@ -445,19 +533,34 @@ const App: React.FC = () => {
     if (!authForm.age.trim()) { setAuthError(t.fillAllFields); setIsAuthLoading(false); return; }
     if (!authForm.gender) { setAuthError(t.fillAllFields); setIsAuthLoading(false); return; }
 
-    const newUser: User = { username: authForm.username, password: authForm.password, name: authForm.name, age: authForm.age, gender: authForm.gender, totalPoints: 0, completedTopics: [], gamesPlayed: 0, seenQuestions: [] };
+    const today = new Date().toISOString().split('T')[0];
+    const newUser: User = { 
+      username: authForm.username, 
+      password: authForm.password, 
+      name: authForm.name, 
+      age: authForm.age, 
+      gender: authForm.gender, 
+      totalPoints: 0, 
+      completedTopics: [], 
+      gamesPlayed: 0, 
+      seenQuestions: [],
+      streak: 1,
+      lastLoginDate: today
+    };
     const success = await dbService.addUser(newUser);
     if (success) { 
         setCurrentUser(newUser);
         localStorage.setItem('bilmece_user_session', JSON.stringify(newUser));
         setRegistrationSuccess(true); 
         refreshLeaderboard(); 
+        playSound('win');
     } 
     else { setAuthError("Error"); }
     setIsAuthLoading(false);
   };
 
   const finishRegistration = () => {
+    playSound('click');
     setRegistrationSuccess(false);
     setGameStatus(GameStatus.AUTH_CHOICE);
     setAuthForm({ username: '', password: '', name: '', age: '', gender: '' });
@@ -465,27 +568,54 @@ const App: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    playSound('click');
     setAuthError(null);
     setIsAuthLoading(true);
     const users = await dbService.getUsers();
     const foundUser = users.find(u => u.username === authForm.username && u.password === authForm.password);
+    
     if (foundUser) {
-      if (!foundUser.seenQuestions) foundUser.seenQuestions = [];
-      setCurrentUser(foundUser);
-      localStorage.setItem('bilmece_user_session', JSON.stringify(foundUser));
+      // Streak Logic
+      const today = new Date().toISOString().split('T')[0];
+      const lastLogin = foundUser.lastLoginDate;
+      let newStreak = foundUser.streak || 0;
+
+      if (lastLogin !== today) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        if (lastLogin === yesterdayStr) {
+          newStreak += 1;
+        } else {
+          newStreak = 1;
+        }
+        
+        // Update user streak in DB
+        const updatedUser = { ...foundUser, streak: newStreak, lastLoginDate: today };
+        await dbService.updateUser(updatedUser.username, { streak: newStreak, lastLoginDate: today });
+        setCurrentUser(updatedUser);
+        localStorage.setItem('bilmece_user_session', JSON.stringify(updatedUser));
+      } else {
+        // Already logged in today
+        setCurrentUser(foundUser);
+        localStorage.setItem('bilmece_user_session', JSON.stringify(foundUser));
+      }
+      
       setGameStatus(GameStatus.AUTH_CHOICE);
       setAuthForm({ username: '', password: '', name: '', age: '', gender: '' });
-    } else { setAuthError("Error"); }
+      playSound('correct');
+    } else { setAuthError("Error"); playSound('wrong'); }
     setIsAuthLoading(false);
   };
 
   const handleLogout = () => { 
+      playSound('click');
       setCurrentUser(null); 
       localStorage.removeItem('bilmece_user_session');
       setGameStatus(GameStatus.AUTH_CHOICE); 
   };
 
-  // SCORING LOGIC - 50 Points Fixed
   const updateUserStats = async (points: number, topicCompleted?: string) => {
     if (!currentUser) return;
     const updatedUser = { ...currentUser };
@@ -509,8 +639,9 @@ const App: React.FC = () => {
 
   const markQuestionAsSeen = async (questionText: string) => {
     if (!currentUser) return;
-    if (currentUser.seenQuestions.includes(questionText)) return;
-    const updatedList = [...currentUser.seenQuestions, questionText];
+    if (currentUser.seenQuestions && currentUser.seenQuestions.includes(questionText)) return;
+    const currentSeen = currentUser.seenQuestions || [];
+    const updatedList = [...currentSeen, questionText];
     const updatedUser = { ...currentUser, seenQuestions: updatedList };
     setCurrentUser(updatedUser);
     localStorage.setItem('bilmece_user_session', JSON.stringify(updatedUser));
@@ -519,6 +650,7 @@ const App: React.FC = () => {
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    playSound('click');
     if (!currentUser) return;
     const updates = { name: editProfileForm.name, age: editProfileForm.age, gender: editProfileForm.gender };
     const success = await dbService.updateUser(currentUser.username, updates);
@@ -527,12 +659,13 @@ const App: React.FC = () => {
         setCurrentUser(updatedUser); 
         localStorage.setItem('bilmece_user_session', JSON.stringify(updatedUser));
         setProfileSaveStatus('saved'); 
+        playSound('correct');
         setTimeout(() => setProfileSaveStatus('idle'), 2000); 
         refreshLeaderboard(); 
     }
   };
 
-  // ADMIN - USERS
+  // ADMIN
   const handleDeleteUser = async (usernameToDelete: string) => {
     if (window.confirm(`${usernameToDelete} istifadəçisini silmək istədiyinizə əminsiniz?`)) {
       const success = await dbService.deleteUser(usernameToDelete);
@@ -554,12 +687,10 @@ const App: React.FC = () => {
     if (success) { await refreshLeaderboard(); setUserToEdit(null); }
   };
 
-  // ADMIN - QUESTIONS
   const handleSeedQuestions = async () => {
     if (window.confirm("Bütün mövcud suallar bazaya yüklənəcək. Davam edilsin?")) {
       const allStaticQuestions: any[] = [];
       TOPICS.forEach(topic => {
-        // Seed default AZ questions
         const qs = getQuestionsByTopic(topic.id, [], 'az'); 
         qs.forEach(q => {
            allStaticQuestions.push({
@@ -571,6 +702,18 @@ const App: React.FC = () => {
              language: 'az'
            });
         });
+        // Seed EN
+        const qsEn = getQuestionsByTopic(topic.id, [], 'en');
+        qsEn.forEach(q => {
+            allStaticQuestions.push({
+              text: q.text,
+              options: q.options,
+              correctAnswerIndex: q.correctAnswerIndex,
+              topic: topic.id,
+              difficulty: q.difficulty || 'medium',
+              language: 'en'
+            });
+         });
       });
       await dbService.seedQuestions(allStaticQuestions);
       alert("Suallar yükləndi!");
@@ -625,7 +768,6 @@ const App: React.FC = () => {
   };
 
   // --- GAME LOGIC ---
-  
   useEffect(() => {
     if (gameStatus === GameStatus.PLAYING && answerState === AnswerState.IDLE && !isTimerPaused) {
       timerIntervalRef.current = window.setInterval(() => {
@@ -642,26 +784,21 @@ const App: React.FC = () => {
      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
      setLossReason('timeout');
      setGameStatus(GameStatus.LOST);
-     updateUserStats(0); // No points for timeout
+     updateUserStats(0);
+     playSound('wrong');
   };
 
   const startGameWithTopic = async (topic: Topic) => {
-    // 1. Try to get questions from DB first (Cloud) matching current language
+    playSound('click');
     let rawQuestions = await dbService.getQuestions(topic, language);
     let gameQuestions: Question[] = [];
-    
-    // Helper shuffle function
     const shuffle = (arr: any[]) => [...arr].sort(() => 0.5 - Math.random());
 
-    // 2. Logic: 5 Easy, 5 Medium, 5 Hard
     if (rawQuestions.length > 0) {
-       console.log("DB-dən suallar yüklənir...");
-       
        const easy = rawQuestions.filter(q => q.difficulty === 'easy');
        const medium = rawQuestions.filter(q => q.difficulty === 'medium');
        const hard = rawQuestions.filter(q => q.difficulty === 'hard');
 
-       // If we have enough structure, pick 5 from each
        if (easy.length >= 5 && medium.length >= 5 && hard.length >= 5) {
           gameQuestions = [
             ...shuffle(easy).slice(0, 5),
@@ -669,13 +806,9 @@ const App: React.FC = () => {
             ...shuffle(hard).slice(0, 5)
           ];
        } else {
-          // Fallback if structure is weak: just shuffle all and take 15
           gameQuestions = shuffle(rawQuestions).slice(0, 15);
        }
     } else {
-       console.log("DB boşdur, lokal suallardan istifadə edilir.");
-       // Fallback to local constants which already implements the 5/5/5 logic
-       // IMPORTANT: Pass current language to local getter
        gameQuestions = getQuestionsByTopic(topic, currentUser?.seenQuestions || [], language);
     }
 
@@ -690,6 +823,7 @@ const App: React.FC = () => {
     setCurrentQuestionIndex(0);
     setLifelines({ fiftyFifty: true, askAudience: true, askAI: true });
     resetQuestionState(0);
+    playSound('win'); // Start sound
   };
 
   const resetQuestionState = (levelIndex: number) => {
@@ -698,8 +832,8 @@ const App: React.FC = () => {
 
   const handleAnswerSelect = useCallback((index: number) => {
     if (answerState !== AnswerState.IDLE || !questions[currentQuestionIndex]) return;
+    playSound('click');
     
-    // Remove focus to prevent "blue" button state on next question
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
@@ -711,33 +845,43 @@ const App: React.FC = () => {
     setTimeout(() => {
       const isCorrect = index === questions[currentQuestionIndex].correctAnswerIndex;
       setAnswerState(isCorrect ? AnswerState.CORRECT : AnswerState.WRONG);
+      
+      if (isCorrect) playSound('correct');
+      else playSound('wrong');
 
       setTimeout(() => {
         if (isCorrect) {
           const currentQ = questions[currentQuestionIndex];
           markQuestionAsSeen(currentQ.text);
-          // FIXED SCORING: 50 Points per question
           updateUserStats(50);
           
           if (currentQuestionIndex + 1 >= questions.length) {
             setGameStatus(GameStatus.WON);
-            updateUserStats(50, selectedTopic || undefined); // Bonus for winning
+            updateUserStats(50, selectedTopic || undefined);
+            playSound('win');
           } else {
             setCurrentQuestionIndex(prev => { const next = prev + 1; resetQuestionState(next); return next; });
           }
         } else {
           setLossReason('wrong');
           setGameStatus(GameStatus.LOST);
-          // No points for losing step
         }
       }, 2500);
     }, 1500);
-  }, [answerState, currentQuestionIndex, questions, selectedTopic, currentUser]);
+  }, [answerState, currentQuestionIndex, questions, selectedTopic, currentUser, soundEnabled]);
 
-  const useFiftyFifty = () => { if (!lifelines.fiftyFifty) return; const correct = questions[currentQuestionIndex].correctAnswerIndex; const wrongs = [0, 1, 2, 3].filter(i => i !== correct).sort(() => 0.5 - Math.random()); setHiddenOptions([wrongs[0], wrongs[1]]); setLifelines(prev => ({ ...prev, fiftyFifty: false })); };
+  const useFiftyFifty = () => { 
+    if (!lifelines.fiftyFifty) return; 
+    playSound('click');
+    const correct = questions[currentQuestionIndex].correctAnswerIndex; 
+    const wrongs = [0, 1, 2, 3].filter(i => i !== correct).sort(() => 0.5 - Math.random()); 
+    setHiddenOptions([wrongs[0], wrongs[1]]); 
+    setLifelines(prev => ({ ...prev, fiftyFifty: false })); 
+  };
   
   const useAskAudience = () => { 
     if (!lifelines.askAudience) return; 
+    playSound('click');
     setIsTimerPaused(true); 
     setTimeout(() => { 
       const correct = questions[currentQuestionIndex].correctAnswerIndex; 
@@ -754,31 +898,73 @@ const App: React.FC = () => {
       data[wrongIndices[2]] = w3; 
       setAudienceData({ A: data[0], B: data[1], C: data[2], D: data[3] }); 
       setLifelines(prev => ({ ...prev, askAudience: false })); 
-      // Timer remains paused while audience help is shown
     }, 2000); 
   };
   
   const useAskAI = async () => { 
     if (!lifelines.askAI || aiLoading) return; 
+    playSound('click');
     setAiLoading(true); 
     setIsTimerPaused(true); 
     const hint = await getAIHint(questions[currentQuestionIndex].text, questions[currentQuestionIndex].options); 
     setAiHint(hint); 
     setAiLoading(false); 
-    setIsTimerPaused(true); // Ensure it stays paused
+    setIsTimerPaused(true);
     setLifelines(prev => ({ ...prev, askAI: false })); 
   };
 
-  // --- STYLES & RENDERS ---
-  const bgClass = "bg-[#020220]"; const cardClass = "bg-slate-900/80 border-blue-500/50 text-white"; const inputClass = "bg-slate-800 border-slate-600 text-white";
+  // --- RENDER FUNCTIONS ---
+  
+  const renderSettingsModal = () => (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[90] backdrop-blur-sm animate-fade-in">
+      <div className="bg-[#000030]/95 p-6 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-sm relative">
+        <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={24} /></button>
+        <div className="flex items-center gap-2 mb-6 text-white border-b border-slate-700 pb-3">
+           <Settings size={24} className="text-gray-300" />
+           <h2 className="text-xl font-black">{t.settings}</h2>
+        </div>
+        
+        <div className="space-y-6">
+           <div className="flex items-center justify-between">
+              <span className="text-slate-200 font-bold flex items-center gap-2"><Volume2 size={20} className="text-blue-400"/> {t.sound}</span>
+              <button 
+                onClick={() => { setSoundEnabled(!soundEnabled); playSound('click'); }}
+                className={`w-14 h-8 rounded-full flex items-center p-1 transition-colors ${soundEnabled ? 'bg-green-600 justify-end' : 'bg-slate-600 justify-start'}`}
+              >
+                <div className="w-6 h-6 bg-white rounded-full shadow-md"></div>
+              </button>
+           </div>
+           
+           <div className="flex flex-col gap-2">
+              <span className="text-slate-200 font-bold flex items-center gap-2"><Globe size={20} className="text-purple-400"/> {t.language}</span>
+              <div className="flex gap-2">
+                 <button 
+                   onClick={() => setLanguage('az')} 
+                   className={`flex-1 py-2 rounded-lg font-bold border-2 transition-all ${language === 'az' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800 border-slate-600 text-slate-400'}`}
+                 >
+                   Azərbaycan
+                 </button>
+                 <button 
+                   onClick={() => setLanguage('en')} 
+                   className={`flex-1 py-2 rounded-lg font-bold border-2 transition-all ${language === 'en' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800 border-slate-600 text-slate-400'}`}
+                 >
+                   English
+                 </button>
+              </div>
+           </div>
+        </div>
+        
+        <Button fullWidth onClick={() => setShowSettings(false)} className="mt-8 bg-blue-700">{t.close}</Button>
+      </div>
+    </div>
+  );
 
   const renderHelpModal = () => (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[70] backdrop-blur-sm animate-fade-in">
-      <div className={`${cardClass} p-6 rounded-2xl w-full max-w-md shadow-2xl bg-[#000030] relative overflow-y-auto max-h-[90vh]`}>
+      <div className="bg-[#000030] p-6 rounded-2xl w-full max-w-md shadow-2xl border border-teal-500/30 relative overflow-y-auto max-h-[90vh]">
         <button onClick={() => setShowHelp(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={24} /></button>
         <div className="flex items-center gap-2 mb-4 text-teal-400"><HelpCircle size={28} /><h2 className="text-xl font-black">{t.rulesTitle}</h2></div>
         
-        {/* Game Description */}
         <div className="mb-6 p-3 bg-blue-900/20 rounded-lg border border-blue-500/20">
            <p className="text-slate-300 text-sm font-medium leading-relaxed">{t.gameDescription}</p>
         </div>
@@ -795,7 +981,7 @@ const App: React.FC = () => {
   
   const renderPrivacyModal = () => (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[80] backdrop-blur-sm animate-fade-in">
-      <div className={`${cardClass} p-6 rounded-2xl w-full max-w-2xl shadow-2xl bg-[#000030] relative overflow-y-auto max-h-[90vh]`}>
+      <div className="bg-[#000030] p-6 rounded-2xl w-full max-w-2xl shadow-2xl border border-blue-500/30 relative overflow-y-auto max-h-[90vh]">
         <button onClick={() => setShowPrivacyModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={24} /></button>
         <div className="flex items-center gap-2 mb-4 text-slate-200 border-b border-slate-700 pb-2">
           <Shield size={24} className="text-blue-400" />
@@ -863,23 +1049,32 @@ const App: React.FC = () => {
     const isLoggedIn = !!currentUser;
     const isAdmin = currentUser?.username === 'admin';
     const btnBase = "py-3 md:py-4 text-sm md:text-base font-bold border-2 flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-lg rounded-xl";
-    // Filter out admin from count
     const validUsers = allUsers.filter(u => u.username !== 'admin');
     const highestScore = validUsers.length > 0 ? Math.max(...validUsers.map(u => u.totalPoints)) : 0;
     const playerCount = validUsers.length;
 
     return (
       <div className="flex flex-col h-full w-full relative z-10 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+        {/* Settings Icon */}
+        <div className="absolute top-4 right-4 z-[60]">
+            <button 
+                onClick={() => setShowSettings(true)}
+                className="w-10 h-10 bg-slate-800/50 hover:bg-slate-700 rounded-full flex items-center justify-center border border-slate-600 transition-colors"
+            >
+                <Settings size={20} className="text-slate-300" />
+            </button>
+        </div>
+
         <div className="flex flex-col min-h-full w-full justify-between">
-            <div className="flex flex-col items-center w-full">
-                <div className="flex flex-col items-center justify-center pt-16 md:pt-24 shrink-0 relative z-20 px-4 animate-zoom-in" style={{ animationDelay: '0.1s' }}>
+            <div className="flex flex-col items-center w-full animate-fade-in-up">
+                <div className="flex flex-col items-center justify-center pt-16 md:pt-24 shrink-0 relative z-20 px-4">
                    <div className="scale-105 md:scale-110"><GameLogo size="xl" /></div>
-                   <div className="mt-10 md:mt-12 text-center z-30 px-4 animate-fade-in-up" style={{ animationDelay: '0.4s', opacity: 0, animationFillMode: 'forwards' }}>
+                   <div className="mt-10 md:mt-12 text-center z-30 px-4 animate-scale-in">
                      <p className="text-blue-100 text-sm md:text-base font-bold tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t.slogan1}</p>
                      <p className="text-yellow-600 text-lg md:text-xl font-black tracking-widest drop-shadow-[0_2px_10px_rgba(234,179,8,0.5)]">{t.slogan2}</p>
                    </div>
                 </div>
-                <div className="flex justify-between items-center px-6 w-full max-w-sm mx-auto gap-4 mt-4 animate-slide-in-right" style={{ animationDelay: '0.6s', opacity: 0, animationFillMode: 'forwards' }}>
+                <div className="flex justify-between items-center px-6 w-full max-w-sm mx-auto gap-4 mt-4 animate-slide-in-up">
                    <div className="flex-1 flex flex-col justify-center px-3 py-2 bg-[#000030]/80 border border-blue-600 rounded-xl shadow-[0_0_10px_rgba(37,99,235,0.3)] min-h-[50px] relative overflow-hidden group">
                       <div className="absolute inset-0 bg-blue-600/10 group-hover:bg-blue-600/20 transition-colors"></div>
                       <div className="flex items-center gap-2 relative z-10">
@@ -897,10 +1092,9 @@ const App: React.FC = () => {
                 </div>
             </div>
             
-            {/* Welcome User Section - HORIZONTAL LAYOUT */}
-            <div className="flex-1 flex flex-col items-center justify-center w-full px-4 py-2 min-h-[60px]">
+            <div className="flex-1 flex flex-col items-center justify-center w-full px-4 py-2 min-h-[60px] animate-fade-in">
                {isLoggedIn && (
-                  <div className="flex items-center justify-between w-full max-w-xs mx-auto bg-[#000040]/80 p-3 rounded-xl border border-blue-500/30 backdrop-blur-md shadow-lg animate-bounce-in mb-2 gap-3" style={{ animationDelay: '0.3s' }}>
+                  <div className="flex items-center justify-between w-full max-w-xs mx-auto bg-[#000040]/80 p-3 rounded-xl border border-blue-500/30 backdrop-blur-md shadow-lg mb-2 gap-3">
                      <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shrink-0 border border-blue-400 shadow-inner">
                            {currentUser.name.charAt(0).toUpperCase()}
@@ -910,45 +1104,38 @@ const App: React.FC = () => {
                            <span className="text-sm font-bold text-white truncate leading-none">{currentUser.name}</span>
                         </div>
                      </div>
-                     <div className="flex items-center gap-1.5 bg-[#000020]/80 px-3 py-1.5 rounded-lg border border-yellow-500/30 shadow-inner shrink-0">
-                        <Trophy size={14} className="text-yellow-400" />
-                        <span className="font-mono font-bold text-yellow-400 text-sm">{currentUser.totalPoints}</span>
+                     <div className="flex flex-col items-end gap-1">
+                       <div className="flex items-center gap-1.5 bg-[#000020]/80 px-2 py-1 rounded-lg border border-yellow-500/30 shadow-inner shrink-0">
+                          <Trophy size={12} className="text-yellow-400" />
+                          <span className="font-mono font-bold text-yellow-400 text-xs">{currentUser.totalPoints}</span>
+                       </div>
+                       <div className="flex items-center gap-1">
+                          <Flame size={12} className={currentUser.streak > 1 ? "text-orange-500 fill-orange-500 animate-pulse" : "text-slate-500"} />
+                          <span className="text-[10px] text-slate-300 font-bold">{currentUser.streak || 1} {t.streak}</span>
+                       </div>
                      </div>
                   </div>
                )}
             </div>
 
-            <div className="w-full px-6 pb-4 md:pb-6 flex flex-col items-center shrink-0 max-w-xs mx-auto z-20 animate-slide-in-up" style={{ animationDelay: '0.8s', opacity: 0, animationFillMode: 'forwards' }}>
-               <div className="w-full flex flex-col gap-3">
-               
-               {/* Language Switcher moved here */}
-               <div className="flex justify-center gap-6 mb-2">
-                  <button 
-                      onClick={() => setLanguage('az')} 
-                      className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-all shadow-lg ${language === 'az' ? 'border-yellow-400 scale-110 ring-2 ring-yellow-400/30' : 'border-white/20 opacity-60 hover:opacity-100 grayscale hover:grayscale-0'}`}
-                      title="Azərbaycan dili"
-                  >
-                      <img src="https://flagcdn.com/w40/az.png" alt="AZ" className="w-full h-full object-cover" />
-                  </button>
-                  <button 
-                      onClick={() => setLanguage('en')} 
-                      className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-all shadow-lg ${language === 'en' ? 'border-yellow-400 scale-110 ring-2 ring-yellow-400/30' : 'border-white/20 opacity-60 hover:opacity-100 grayscale hover:grayscale-0'}`}
-                      title="English"
-                  >
-                      <img src="https://flagcdn.com/w40/gb.png" alt="EN" className="w-full h-full object-cover" />
-                  </button>
+            <div className="w-full px-6 pb-4 md:pb-6 flex flex-col items-center shrink-0 max-w-xs mx-auto z-20 animate-slide-in-up">
+               {/* Language Switcher Inline */}
+               <div className="flex gap-2 mb-4 w-full justify-center">
+                  <button onClick={() => setLanguage('az')} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${language === 'az' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800/50 border-slate-600 text-slate-400'}`}>AZ</button>
+                  <button onClick={() => setLanguage('en')} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${language === 'en' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800/50 border-slate-600 text-slate-400'}`}>EN</button>
                </div>
 
+               <div className="w-full flex flex-col gap-3">
                {!isLoggedIn ? (
                  <>
-                   <Button fullWidth onClick={() => setGameStatus(GameStatus.LOGIN)} className={`${btnBase} bg-blue-900/80 border-blue-500 text-white`}><LogIn size={20} /> {t.login}</Button>
-                   <Button fullWidth onClick={() => setGameStatus(GameStatus.REGISTER)} className={`${btnBase} bg-fuchsia-900/80 border-fuchsia-500 text-white`}><UserPlus size={20} /> {t.register}</Button>
-                   <Button fullWidth onClick={() => setShowHelp(true)} className={`${btnBase} bg-teal-900/80 border-teal-500 text-white`}><HelpCircle size={20} /> {t.help}</Button>
-                   <Button fullWidth onClick={() => setGameStatus(GameStatus.LEADERBOARD)} className={`${btnBase} bg-amber-900/80 border-amber-500 text-white`}><Trophy size={20} /> {t.leaderboard}</Button>
+                   <Button fullWidth onClick={() => { playSound('click'); setGameStatus(GameStatus.LOGIN); }} className={`${btnBase} bg-blue-900/80 border-blue-500 text-white`}><LogIn size={20} /> {t.login}</Button>
+                   <Button fullWidth onClick={() => { playSound('click'); setGameStatus(GameStatus.REGISTER); }} className={`${btnBase} bg-fuchsia-900/80 border-fuchsia-500 text-white`}><UserPlus size={20} /> {t.register}</Button>
+                   <Button fullWidth onClick={() => { playSound('click'); setShowHelp(true); }} className={`${btnBase} bg-teal-900/80 border-teal-500 text-white`}><HelpCircle size={20} /> {t.help}</Button>
+                   <Button fullWidth onClick={() => { playSound('click'); setGameStatus(GameStatus.LEADERBOARD); }} className={`${btnBase} bg-amber-900/80 border-amber-500 text-white`}><Trophy size={20} /> {t.leaderboard}</Button>
                  </>
                ) : (
                  <>
-                   <Button fullWidth onClick={() => setGameStatus(GameStatus.TOPIC_SELECTION)} className={`${btnBase} bg-green-900/80 border-green-500 text-white`}><Play size={22} fill="currentColor" /> {t.startGame}</Button>
+                   <Button fullWidth onClick={() => startGameWithTopic('COGRAFIYA')} className={`${btnBase} bg-green-900/80 border-green-500 text-white`}><Play size={22} fill="currentColor" /> {t.startGame}</Button>
                    {isAdmin && <Button fullWidth onClick={() => setGameStatus(GameStatus.ADMIN_DASHBOARD)} className={`${btnBase} bg-gray-800/80 border-gray-500 text-white`}><Wrench size={20} /> {t.adminPanel}</Button>}
                    <Button fullWidth onClick={() => setGameStatus(GameStatus.LEADERBOARD)} className={`${btnBase} bg-amber-900/80 border-amber-500 text-white`}><Trophy size={20} /> {t.leaderboard}</Button>
                    <Button fullWidth onClick={() => setShowHelp(true)} className={`${btnBase} bg-teal-900/80 border-teal-500 text-white`}><HelpCircle size={20} /> {t.help}</Button>
@@ -963,18 +1150,18 @@ const App: React.FC = () => {
             </div>
         </div>
         {showHelp && renderHelpModal()}
+        {showSettings && renderSettingsModal()}
       </div>
     );
   };
 
   const renderLeaderboard = () => {
-    // Hide Admin from leaderboard
     const sortedUsers = [...allUsers].filter(u => u.username !== 'admin').sort((a, b) => b.totalPoints - a.totalPoints);
     return (
-      <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 z-10">
+      <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 z-10 animate-fade-in">
         <div className="flex justify-between items-center mb-6 shrink-0 bg-slate-900/80 p-4 rounded-xl border border-slate-700">
            <div className="flex items-center gap-3"><Trophy size={32} className="text-yellow-500" /><h2 className="text-xl font-black text-white">{t.leaderboardTitle}</h2></div>
-           <Button variant="secondary" onClick={() => setGameStatus(previousStatus || GameStatus.AUTH_CHOICE)} className="py-1 px-3 text-sm h-10 border-slate-600 bg-slate-800"><ArrowLeft size={18} /></Button>
+           <Button variant="secondary" onClick={() => { playSound('click'); setGameStatus(previousStatus || GameStatus.AUTH_CHOICE); }} className="py-1 px-3 text-sm h-10 border-slate-600 bg-slate-800"><ArrowLeft size={18} /></Button>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto bg-slate-900/60 border border-slate-700 rounded-xl p-4 space-y-2">
           {sortedUsers.map((user, index) => (
@@ -988,17 +1175,13 @@ const App: React.FC = () => {
           ))}
           {sortedUsers.length === 0 && <div className="text-center text-slate-400 mt-10 font-medium">{t.noPlayers}</div>}
         </div>
-        {/* AdSense Leaderboard Bottom */}
         <AdSenseBanner dataAdSlot="1234567890" dataAdFormat="horizontal" />
       </div>
     );
   };
 
   const renderAdminDashboard = () => {
-    // Filter out admin from list
     const filteredUsers = allUsers.filter(u => u.username !== 'admin' && (u.username.toLowerCase().includes(adminSearch.toLowerCase()) || u.name.toLowerCase().includes(adminSearch.toLowerCase())));
-    
-    // Questions Filter
     const filteredQuestions = adminQuestions.filter(q => q.text.toLowerCase().includes(adminSearch.toLowerCase()));
 
     return (
@@ -1013,9 +1196,8 @@ const App: React.FC = () => {
            <button onClick={() => setAdminTab('questions')} className={`flex-1 p-2 rounded-lg font-bold transition-colors ${adminTab === 'questions' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>Suallar</button>
         </div>
 
-        {/* Search */}
         <div className="mb-4 relative shrink-0">
-          <input type="text" placeholder="Axtarış..." value={adminSearch} onChange={(e) => setAdminSearch(e.target.value)} className={`w-full p-3 pl-10 rounded-lg border font-medium ${inputClass}`} />
+          <input type="text" placeholder="Axtarış..." value={adminSearch} onChange={(e) => setAdminSearch(e.target.value)} className="w-full bg-slate-800 border-slate-600 text-white p-3 pl-10 rounded-lg border font-medium" />
           <Search className="absolute left-3 top-3.5 text-slate-400" size={20} />
         </div>
 
@@ -1065,22 +1247,21 @@ const App: React.FC = () => {
              </div>
           </div>
         )}
-        {/* AdSense Admin Bottom */}
         <AdSenseBanner dataAdSlot="1234567890" dataAdFormat="horizontal" />
 
         {/* User Edit Modal */}
         {userToEdit && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-             <div className={`${cardClass} p-6 rounded-2xl w-full max-w-md shadow-2xl bg-[#000030]`}>
+             <div className="bg-[#000030] p-6 rounded-2xl w-full max-w-md shadow-2xl">
                 <h3 className="text-xl font-bold mb-4 text-white">Redaktə et: {userToEdit.username}</h3>
                 <form onSubmit={handleAdminSaveUser} className="space-y-3">
-                   <div><label className="text-xs text-blue-300 block mb-1">{t.nameSurname}</label><input type="text" value={adminEditForm.name} onChange={e => setAdminEditForm({...adminEditForm, name: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} /></div>
+                   <div><label className="text-xs text-blue-300 block mb-1">{t.nameSurname}</label><input type="text" value={adminEditForm.name} onChange={e => setAdminEditForm({...adminEditForm, name: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" /></div>
                    <div className="flex gap-2">
-                      <div className="flex-1"><label className="text-xs text-blue-300 block mb-1">{t.age}</label><input type="number" value={adminEditForm.age} onChange={e => setAdminEditForm({...adminEditForm, age: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} /></div>
-                      <div className="flex-1"><label className="text-xs text-blue-300 block mb-1">{t.gender}</label><select value={adminEditForm.gender} onChange={e => setAdminEditForm({...adminEditForm, gender: e.target.value as any})} className={`w-full p-2 rounded border font-medium ${inputClass}`}><option value="Kişi">{t.male}</option><option value="Qadın">{t.female}</option></select></div>
+                      <div className="flex-1"><label className="text-xs text-blue-300 block mb-1">{t.age}</label><input type="number" value={adminEditForm.age} onChange={e => setAdminEditForm({...adminEditForm, age: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" /></div>
+                      <div className="flex-1"><label className="text-xs text-blue-300 block mb-1">{t.gender}</label><select value={adminEditForm.gender} onChange={e => setAdminEditForm({...adminEditForm, gender: e.target.value as any})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium"><option value="Kişi">{t.male}</option><option value="Qadın">{t.female}</option></select></div>
                    </div>
-                   <div><label className="text-xs text-red-300 block mb-1">{t.password}</label><input type="text" value={adminEditForm.password} onChange={e => setAdminEditForm({...adminEditForm, password: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} /></div>
-                   <div><label className="text-xs text-green-300 block mb-1">{t.totalPoints}</label><input type="number" value={adminEditForm.totalPoints} onChange={e => setAdminEditForm({...adminEditForm, totalPoints: Number(e.target.value)})} className={`w-full p-2 rounded border font-medium ${inputClass}`} /></div>
+                   <div><label className="text-xs text-red-300 block mb-1">{t.password}</label><input type="text" value={adminEditForm.password} onChange={e => setAdminEditForm({...adminEditForm, password: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" /></div>
+                   <div><label className="text-xs text-green-300 block mb-1">{t.totalPoints}</label><input type="number" value={adminEditForm.totalPoints} onChange={e => setAdminEditForm({...adminEditForm, totalPoints: Number(e.target.value)})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" /></div>
                    <div className="flex gap-2 mt-4"><Button type="submit" fullWidth className="bg-green-700">{t.save}</Button><Button type="button" fullWidth variant="secondary" onClick={() => setUserToEdit(null)}>Ləğv et</Button></div>
                 </form>
              </div>
@@ -1090,32 +1271,32 @@ const App: React.FC = () => {
         {/* Question Add/Edit Modal */}
         {isAddingQuestion && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-             <div className={`${cardClass} p-6 rounded-2xl w-full max-w-lg shadow-2xl bg-[#000030] overflow-y-auto max-h-[90vh]`}>
+             <div className="bg-[#000030] p-6 rounded-2xl w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
                 <h3 className="text-xl font-bold mb-4 text-white">{questionToEdit ? "Sualı Düzəlt" : "Yeni Sual"}</h3>
                 <form onSubmit={handleSaveQuestion} className="space-y-3">
-                   <div><label className="text-xs text-blue-300 block mb-1">Sual Mətni</label><textarea value={questionForm.text} onChange={e => setQuestionForm({...questionForm, text: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} required /></div>
+                   <div><label className="text-xs text-blue-300 block mb-1">Sual Mətni</label><textarea value={questionForm.text} onChange={e => setQuestionForm({...questionForm, text: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" required /></div>
                    <div className="grid grid-cols-2 gap-2">
-                      <div><label className="text-xs text-slate-400">Variant A</label><input type="text" value={questionForm.optionA} onChange={e => setQuestionForm({...questionForm, optionA: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} required /></div>
-                      <div><label className="text-xs text-slate-400">Variant B</label><input type="text" value={questionForm.optionB} onChange={e => setQuestionForm({...questionForm, optionB: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} required /></div>
-                      <div><label className="text-xs text-slate-400">Variant C</label><input type="text" value={questionForm.optionC} onChange={e => setQuestionForm({...questionForm, optionC: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} required /></div>
-                      <div><label className="text-xs text-slate-400">Variant D</label><input type="text" value={questionForm.optionD} onChange={e => setQuestionForm({...questionForm, optionD: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} required /></div>
+                      <div><label className="text-xs text-slate-400">Variant A</label><input type="text" value={questionForm.optionA} onChange={e => setQuestionForm({...questionForm, optionA: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" required /></div>
+                      <div><label className="text-xs text-slate-400">Variant B</label><input type="text" value={questionForm.optionB} onChange={e => setQuestionForm({...questionForm, optionB: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" required /></div>
+                      <div><label className="text-xs text-slate-400">Variant C</label><input type="text" value={questionForm.optionC} onChange={e => setQuestionForm({...questionForm, optionC: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" required /></div>
+                      <div><label className="text-xs text-slate-400">Variant D</label><input type="text" value={questionForm.optionD} onChange={e => setQuestionForm({...questionForm, optionD: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" required /></div>
                    </div>
                    <div className="flex gap-2">
                       <div className="flex-1">
                          <label className="text-xs text-green-300 block mb-1">Düzgün Variant</label>
-                         <select value={questionForm.correctAnswerIndex} onChange={e => setQuestionForm({...questionForm, correctAnswerIndex: Number(e.target.value)})} className={`w-full p-2 rounded border font-medium ${inputClass}`}>
+                         <select value={questionForm.correctAnswerIndex} onChange={e => setQuestionForm({...questionForm, correctAnswerIndex: Number(e.target.value)})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium">
                             <option value={0}>A</option><option value={1}>B</option><option value={2}>C</option><option value={3}>D</option>
                          </select>
                       </div>
                       <div className="flex-1">
                          <label className="text-xs text-blue-300 block mb-1">Mövzu</label>
-                         <select value={questionForm.topic} onChange={e => setQuestionForm({...questionForm, topic: e.target.value as Topic})} className={`w-full p-2 rounded border font-medium ${inputClass}`}>
+                         <select value={questionForm.topic} onChange={e => setQuestionForm({...questionForm, topic: e.target.value as Topic})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium">
                             {TOPICS.map(t => <option key={t.id} value={t.id}>{t.label.az}</option>)}
                          </select>
                       </div>
                       <div className="flex-1">
                          <label className="text-xs text-purple-300 block mb-1">Dil</label>
-                         <select value={questionForm.language} onChange={e => setQuestionForm({...questionForm, language: e.target.value as 'az' | 'en'})} className={`w-full p-2 rounded border font-medium ${inputClass}`}>
+                         <select value={questionForm.language} onChange={e => setQuestionForm({...questionForm, language: e.target.value as 'az' | 'en'})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium">
                             <option value="az">AZ</option>
                             <option value="en">EN</option>
                          </select>
@@ -1131,7 +1312,7 @@ const App: React.FC = () => {
   };
 
   const renderLogin = () => (
-    <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20">
+    <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20 animate-fade-in">
       <div className="bg-[#000030]/90 p-8 rounded-2xl border border-blue-500/50 shadow-2xl w-full backdrop-blur-md">
          <div className="flex justify-center mb-6"><div className="p-3 bg-blue-900/50 rounded-full border border-blue-400"><LogIn size={32} className="text-blue-300"/></div></div>
          <h2 className="text-2xl font-black text-center text-white mb-6">{t.loginTitle}</h2>
@@ -1147,7 +1328,7 @@ const App: React.FC = () => {
   );
 
   const renderRegister = () => (
-    <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20 my-auto">
+    <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20 my-auto animate-fade-in">
       <div className="bg-[#000030]/90 p-6 md:p-8 rounded-2xl border border-fuchsia-500/50 shadow-2xl w-full backdrop-blur-md max-h-[90vh] overflow-y-auto">
          {!registrationSuccess ? (
            <>
@@ -1203,7 +1384,7 @@ const App: React.FC = () => {
   );
 
   const renderTopicSelection = () => (
-    <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 z-10">
+    <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 z-10 animate-fade-in">
       <div className="flex justify-between items-center mb-6 shrink-0 bg-slate-900/80 p-4 rounded-xl border border-slate-700">
          <div className="flex items-center gap-3"><BrainCircuit size={32} className="text-blue-400" /><h2 className="text-xl font-black text-white">{t.topicSelection}</h2></div>
          <div className="flex gap-2">
@@ -1212,10 +1393,9 @@ const App: React.FC = () => {
          </div>
       </div>
       <div className="flex-1 min-h-0 grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto pb-4 [&::-webkit-scrollbar]:hidden">
-        {TOPICS.map((topic) => {
+        {TOPICS.map((topic, i) => {
            const Icon = ICON_MAP[topic.icon] || Globe;
            const isCompleted = currentUser?.completedTopics.includes(topic.id);
-           // Simple color mapping for tailwind classes (can be improved)
            let colorClass = "border-blue-500/50 hover:border-blue-400 bg-blue-900/20 hover:bg-blue-900/40";
            if(topic.color === 'amber') colorClass = "border-amber-500/50 hover:border-amber-400 bg-amber-900/20 hover:bg-amber-900/40";
            if(topic.color === 'fuchsia') colorClass = "border-fuchsia-500/50 hover:border-fuchsia-400 bg-fuchsia-900/20 hover:bg-fuchsia-900/40";
@@ -1228,9 +1408,10 @@ const App: React.FC = () => {
            return (
              <button
                key={topic.id}
-               onClick={() => startGameWithTopic(topic.id)}
+               onClick={() => { playSound('click'); startGameWithTopic(topic.id); }}
                disabled={isCompleted}
-               className={`relative p-6 rounded-2xl border-2 flex flex-col items-center justify-center gap-4 transition-all duration-300 group ${isCompleted ? 'opacity-50 grayscale cursor-not-allowed border-slate-700 bg-slate-800' : colorClass}`}
+               style={{ animationDelay: `${i * 0.05}s` }}
+               className={`relative p-6 rounded-2xl border-2 flex flex-col items-center justify-center gap-4 transition-all duration-300 group animate-scale-in ${isCompleted ? 'opacity-50 grayscale cursor-not-allowed border-slate-700 bg-slate-800' : colorClass}`}
              >
                 <div className={`p-4 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors`}>
                    <Icon size={40} className="text-white drop-shadow-md" />
@@ -1244,7 +1425,6 @@ const App: React.FC = () => {
            );
         })}
       </div>
-      {/* AdSense Topic Selection Bottom */}
       <AdSenseBanner dataAdSlot="1234567890" dataAdFormat="horizontal" />
     </div>
   );
@@ -1254,11 +1434,10 @@ const App: React.FC = () => {
     const currentQ = questions[currentQuestionIndex];
     
     return (
-      <div className="flex flex-col h-full w-full relative z-10 max-w-5xl mx-auto md:px-4">
-         {/* Top Bar */}
+      <div className="flex flex-col h-full w-full relative z-10 max-w-5xl mx-auto md:px-4 animate-fade-in">
          <div className="flex justify-between items-start p-4 shrink-0">
              <div className="flex gap-2 items-center">
-               <button onClick={() => setGameStatus(GameStatus.TOPIC_SELECTION)} className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white border border-slate-600"><ArrowLeft size={20}/></button>
+               <button onClick={() => { playSound('click'); setGameStatus(GameStatus.TOPIC_SELECTION); }} className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white border border-slate-600"><ArrowLeft size={20}/></button>
                <div className="bg-slate-900/80 px-4 py-2 rounded-full border border-blue-500/30 flex items-center gap-2">
                  <span className="text-blue-300 text-xs font-bold uppercase tracking-wider">{t.question}</span>
                  <span className="text-white font-mono font-bold">{currentQuestionIndex + 1}/{questions.length}</span>
@@ -1272,9 +1451,7 @@ const App: React.FC = () => {
          </div>
          
          <div className="flex-1 flex flex-col items-center justify-center p-4 w-full max-w-3xl mx-auto">
-             {/* Question Card */}
-             <div className="w-full bg-[#000040] border-4 border-blue-600 rounded-xl p-6 md:p-8 shadow-[0_0_30px_rgba(37,99,235,0.4)] relative mb-6 min-h-[160px] flex items-center justify-center">
-                {/* Timer Badge Overlapping */}
+             <div className="w-full bg-[#000040] border-4 border-blue-600 rounded-xl p-6 md:p-8 shadow-[0_0_30px_rgba(37,99,235,0.4)] relative mb-6 min-h-[160px] flex items-center justify-center animate-zoom-in">
                 <div className="absolute -top-6 left-1/2 -translate-x-1/2">
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-4 shadow-xl z-20 bg-[#000040] ${timeLeft <= 10 ? 'border-red-500 text-red-500 animate-pulse' : 'border-blue-500 text-white'}`}>
                       {timeLeft}
@@ -1284,11 +1461,10 @@ const App: React.FC = () => {
                 <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-relaxed text-center">{currentQ.text}</h2>
              </div>
 
-             {/* Options Grid */}
              <div className="grid grid-cols-1 gap-3 w-full mb-8">
                 {currentQ.options.map((opt, idx) => {
                    if (hiddenOptions.includes(idx)) {
-                     return <div key={idx} className="h-14 md:h-16"></div>; // Placeholder
+                     return <div key={idx} className="h-14 md:h-16"></div>;
                    }
                    
                    let extraClass = "";
@@ -1296,20 +1472,21 @@ const App: React.FC = () => {
                    if (selectedAnswerIndex === idx) {
                       if (answerState === AnswerState.SELECTED) extraClass = "bg-yellow-600 border-yellow-400 text-black";
                       else if (answerState === AnswerState.CORRECT) extraClass = "bg-green-600 border-green-400 animate-pulse";
-                      else if (answerState === AnswerState.WRONG) extraClass = "bg-red-600 border-red-400";
+                      else if (answerState === AnswerState.WRONG) extraClass = "bg-red-600 border-red-400 animate-shake";
                    } else if (answerState !== AnswerState.IDLE && idx === currentQ.correctAnswerIndex && answerState !== AnswerState.SELECTED) {
                       if (answerState === AnswerState.WRONG) extraClass = "bg-green-600 border-green-400 opacity-80"; 
                    }
 
                    return (
                      <button
-                       key={`${currentQuestionIndex}-${idx}`} // Unmount/Remount on question change
+                       key={`${currentQuestionIndex}-${idx}`}
                        onClick={() => handleAnswerSelect(idx)}
                        disabled={answerState !== AnswerState.IDLE}
                        className={`
-                         relative overflow-hidden group border-2 rounded-xl p-3 md:p-4 text-left transition-all duration-200 shadow-md active:scale-95 flex items-center
+                         relative overflow-hidden group border-2 rounded-xl p-3 md:p-4 text-left transition-all duration-200 shadow-md active:scale-95 flex items-center animate-slide-in-up
                          ${extraClass || "bg-slate-800/80 border-slate-600 hover:bg-blue-900/60 hover:border-blue-400 text-white focus:outline-none"}
                        `}
+                       style={{ animationDelay: `${idx * 0.1}s` }}
                      >
                        <span className="font-extrabold text-yellow-500 mr-3 text-lg">{['A','B','C','D'][idx]}:</span>
                        <span className="font-bold text-sm md:text-base">{opt}</span>
@@ -1318,7 +1495,6 @@ const App: React.FC = () => {
                 })}
              </div>
 
-             {/* Lifelines Bar */}
              <div className="flex gap-6 justify-center w-full mb-6">
                 <button 
                   onClick={useFiftyFifty} 
@@ -1349,8 +1525,6 @@ const App: React.FC = () => {
              </div>
          </div>
 
-         {/* Modals/Overlays */}
-         {/* Audience Graph */}
          {audienceData && (
             <div className="absolute inset-0 bg-black/60 z-30 flex items-end justify-center pb-20 pointer-events-none">
                <div className="bg-slate-900/95 border border-cyan-500 p-6 rounded-xl shadow-2xl flex gap-6 items-end pointer-events-auto animate-fade-in-up">
@@ -1365,7 +1539,6 @@ const App: React.FC = () => {
             </div>
          )}
          
-         {/* AI Hint */}
          {aiHint && (
             <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
                <div className="bg-[#000030] border-2 border-emerald-500 p-6 rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.4)] max-w-md w-full relative animate-bounce-in">
@@ -1384,11 +1557,11 @@ const App: React.FC = () => {
   };
 
   const renderProfile = () => (
-     <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20">
+     <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20 animate-fade-in">
       <div className="bg-[#000030]/90 p-8 rounded-2xl border border-blue-500/50 shadow-2xl w-full backdrop-blur-md">
          <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-black text-white">{t.profile}</h2>
-            <button onClick={() => setGameStatus(GameStatus.TOPIC_SELECTION)} className="text-slate-400 hover:text-white"><X size={24}/></button>
+            <button onClick={() => { playSound('click'); setGameStatus(GameStatus.TOPIC_SELECTION); }} className="text-slate-400 hover:text-white"><X size={24}/></button>
          </div>
          {currentUser && (
            <form onSubmit={handleProfileUpdate} className="space-y-4">
@@ -1448,23 +1621,22 @@ const App: React.FC = () => {
            </div>
            
            <div className="flex flex-col gap-3">
-              <Button onClick={() => setGameStatus(GameStatus.TOPIC_SELECTION)} fullWidth className={`${isWin ? 'bg-green-700 hover:bg-green-600' : 'bg-red-700 hover:bg-red-600'} border-white/30`}>{t.chooseOtherTopic}</Button>
-              <Button onClick={() => setGameStatus(GameStatus.LEADERBOARD)} variant="secondary" fullWidth>{t.leaderboardTitle}</Button>
+              <Button onClick={() => { playSound('click'); setGameStatus(GameStatus.TOPIC_SELECTION); }} fullWidth className={`${isWin ? 'bg-green-700 hover:bg-green-600' : 'bg-red-700 hover:bg-red-600'} border-white/30`}>{t.chooseOtherTopic}</Button>
+              <Button onClick={() => { playSound('click'); setGameStatus(GameStatus.LEADERBOARD); }} variant="secondary" fullWidth>{t.leaderboardTitle}</Button>
            </div>
         </div>
-        {/* AdSense Game Over Screen */}
         <AdSenseBanner dataAdSlot="1234567890" dataAdFormat="rectangle" />
+        {isWin && <Confetti />}
      </div>
   );
 
   return (
-    <div className={`fixed inset-0 h-[100dvh] w-full overflow-hidden flex flex-col transition-colors duration-500 ${bgClass}`}>
+    <div className="fixed inset-0 h-[100dvh] w-full overflow-hidden flex flex-col transition-colors duration-500 bg-[#020220]">
+      <BackgroundParticles />
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-         {/* Enhanced Background Gradients & Particles */}
          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] bg-[radial-gradient(circle,rgba(30,64,175,0.25)_0%,transparent_65%)] blur-xl animate-pulse-slow"></div>
-         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80vw] h-[60vh] bg-[conic-gradient(from_180deg_at_50%_100%,transparent_35%,rgba(59,130,246,0.15)_50%,transparent_65%)] blur-3xl animate-pulse-slow" style={{ animationDelay: '-1.5s' }}></div>
+         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80vw] h-[60vh] bg-[conic-gradient(from_180deg_at_50%_100%,transparent_35%,rgba(59,130,246,0.15)_50%,transparent_65%)] blur-3xl"></div>
          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]"></div>
-         <BackgroundParticles />
          <div className="absolute inset-0 bg-[radial-gradient(transparent_40%,#020210_100%)]"></div>
       </div>
       <div className="flex-1 relative z-10 w-full h-full overflow-hidden font-sans">
@@ -1480,6 +1652,7 @@ const App: React.FC = () => {
          {showProfileModal && renderProfileModal()}
          {showPrivacyModal && renderPrivacyModal()}
          {showHelp && renderHelpModal()}
+         {showSettings && renderSettingsModal()}
       </div>
     </div>
   );

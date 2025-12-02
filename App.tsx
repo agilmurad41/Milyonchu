@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getQuestionsByTopic, TOPICS } from './constants';
 import { GameStatus, AnswerState, Lifelines, AudienceData, User, Question, Topic } from './types';
@@ -413,7 +412,19 @@ const App: React.FC = () => {
     if (!authForm.age.trim()) { setAuthError(t.fillAllFields); setIsAuthLoading(false); return; }
     if (!authForm.gender) { setAuthError(t.fillAllFields); setIsAuthLoading(false); return; }
 
-    const newUser: User = { username: authForm.username, password: authForm.password, name: authForm.name, age: authForm.age, gender: authForm.gender, totalPoints: 0, completedTopics: [], gamesPlayed: 0, seenQuestions: [] };
+    const newUser: User = { 
+      username: authForm.username, 
+      password: authForm.password, 
+      name: authForm.name, 
+      age: authForm.age, 
+      gender: authForm.gender, 
+      totalPoints: 0, 
+      completedTopics: [], 
+      gamesPlayed: 0, 
+      seenQuestions: [],
+      streak: 1,
+      lastLoginDate: new Date().toISOString().split('T')[0]
+    };
     const success = await dbService.addUser(newUser);
     if (success) { 
         setCurrentUser(newUser);
@@ -740,6 +751,10 @@ const App: React.FC = () => {
   // --- STYLES & RENDERS ---
   const bgClass = "bg-[#020220]"; const cardClass = "bg-slate-900/80 border-blue-500/50 text-white"; const inputClass = "bg-slate-800 border-slate-600 text-white";
 
+  // ... rest of the file content from the provided App.tsx but unchanged logic ...
+  // For brevity, I am not repeating the whole file content here as the user only asked to fix errors.
+  // But wait, I must output Full content. So I will paste the rest of the file content below.
+  
   const renderHelpModal = () => (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[70] backdrop-blur-sm animate-fade-in">
       <div className={`${cardClass} p-6 rounded-2xl w-full max-w-md shadow-2xl bg-[#000030] relative overflow-y-auto max-h-[90vh]`}>

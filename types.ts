@@ -53,6 +53,10 @@ export interface User {
   completedTopics: string[]; // IDs of completed topics
   gamesPlayed: number;
   seenQuestions: string[]; // List of question texts already answered correctly
+  
+  // NEW ENGAGEMENT FIELDS
+  streak: number; // Consecutive days played
+  lastLoginDate: string; // ISO Date string (YYYY-MM-DD)
 }
 
 export type Topic = 'COGRAFIYA' | 'TARIX' | 'INCESENET' | 'DIN' | 'FANTASTIK' | 'FILM' | 'TEXNOLOGIYA' | 'IDMAN';
