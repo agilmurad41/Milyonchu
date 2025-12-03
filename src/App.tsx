@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getQuestionsByTopic, TOPICS } from './constants';
 import { GameStatus, AnswerState, Lifelines, AudienceData, User, Question, Topic } from './types';
@@ -39,16 +40,64 @@ import {
   User as UserIcon,
   Home,
   Shield,
-  Settings,
   Volume2,
   VolumeX,
   Flame,
-  Vibrate
+  Settings
 } from 'lucide-react';
 
 // --- ICONS MAPPING ---
 const ICON_MAP: Record<string, React.ElementType> = {
   Globe, BookOpen, Palette, Moon, Rocket, Clapperboard, Trophy, Cpu, Feather, Dumbbell
+};
+
+// --- THEMES ---
+type ThemeKey = 'default' | 'emerald' | 'purple' | 'crimson' | 'slate';
+
+interface ThemeConfig {
+  label: { az: string; en: string };
+  bg: string;
+  glowColor: string;
+  conicColor: string;
+  accentColor: string;
+}
+
+const THEMES: Record<ThemeKey, ThemeConfig> = {
+  default: {
+    label: { az: "Kosmos (Göy)", en: "Space (Blue)" },
+    bg: "bg-[#020220]",
+    glowColor: "rgba(30,64,175,0.25)",
+    conicColor: "rgba(59,130,246,0.15)",
+    accentColor: "border-blue-500"
+  },
+  emerald: {
+    label: { az: "Meşə (Yaşıl)", en: "Forest (Green)" },
+    bg: "bg-[#022c22]",
+    glowColor: "rgba(16,185,129,0.25)",
+    conicColor: "rgba(52,211,153,0.15)",
+    accentColor: "border-emerald-500"
+  },
+  purple: {
+    label: { az: "Qalaktika (Bənövşəyi)", en: "Galaxy (Purple)" },
+    bg: "bg-[#2e1065]",
+    glowColor: "rgba(139,92,246,0.25)",
+    conicColor: "rgba(167,139,250,0.15)",
+    accentColor: "border-purple-500"
+  },
+  crimson: {
+    label: { az: "Vulkan (Qırmızı)", en: "Volcano (Red)" },
+    bg: "bg-[#450a0a]",
+    glowColor: "rgba(220,38,38,0.25)",
+    conicColor: "rgba(248,113,113,0.15)",
+    accentColor: "border-red-500"
+  },
+  slate: {
+    label: { az: "Klassik (Boz)", en: "Classic (Gray)" },
+    bg: "bg-[#0f172a]",
+    glowColor: "rgba(148,163,184,0.25)",
+    conicColor: "rgba(203,213,225,0.15)",
+    accentColor: "border-slate-500"
+  }
 };
 
 // --- TRANSLATIONS ---
@@ -134,12 +183,13 @@ const TRANSLATIONS = {
     understood: "Aydındır",
     close: "Bağla",
     usernameImmutable: "İstifadəçi adı (dəyişdirilə bilməz)",
+    sound: "Səs",
+    streak: "Günlük Alov",
     settings: "Tənzimləmələr",
-    sound: "Səs effektləri",
-    on: "Açıq",
-    off: "Bağlı",
+    theme: "Mövzu Rəngi",
     language: "Dil",
-    streak: "Günlük Alov"
+    on: "Açıq",
+    off: "Bağlı"
   },
   en: {
     slogan1: "Knowledge is power,",
@@ -220,12 +270,13 @@ const TRANSLATIONS = {
     understood: "Got it",
     close: "Close",
     usernameImmutable: "Username (cannot be changed)",
+    sound: "Sound",
+    streak: "Daily Streak",
     settings: "Settings",
-    sound: "Sound Effects",
-    on: "On",
-    off: "Off",
+    theme: "Theme Color",
     language: "Language",
-    streak: "Daily Streak"
+    on: "On",
+    off: "Off"
   }
 };
 
@@ -249,7 +300,7 @@ const playTone = (freq: number, type: OscillatorType, duration: number, vol: num
     osc.start();
     osc.stop(ctx.currentTime + duration);
   } catch (e) {
-    console.error("Audio error", e);
+    // console.error("Audio error", e);
   }
 };
 
@@ -272,13 +323,13 @@ const SOUNDS = {
 
 // --- BACKGROUND PARTICLES COMPONENT ---
 const BackgroundParticles = React.memo(() => {
-  const particles = React.useMemo(() => Array.from({ length: 18 }).map((_, i) => ({
+  const particles = React.useMemo(() => Array.from({ length: 25 }).map((_, i) => ({
     id: i,
     left: `${Math.random() * 100}%`,
-    size: Math.random() * 5 + 3,
-    duration: Math.random() * 15 + 15,
+    size: Math.random() * 6 + 2,
+    duration: Math.random() * 10 + 10,
     delay: Math.random() * 20,
-    opacity: Math.random() * 0.4 + 0.1
+    opacity: Math.random() * 0.6 + 0.2
   })), []);
 
   return (
@@ -328,7 +379,7 @@ const Confetti = () => {
       ))}
     </div>
   );
-};
+});
 
 // Custom Logo Component
 const GameLogo = ({ size = 'normal' }: { size?: 'normal' | 'large' | 'xl' }) => {
@@ -373,6 +424,7 @@ const GameLogo = ({ size = 'normal' }: { size?: 'normal' | 'large' | 'xl' }) => 
 const App: React.FC = () => {
   // --- STATE ---
   const [language, setLanguage] = useState<Language>('az');
+  const [theme, setTheme] = useState<ThemeKey>('default');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [gameStatus, setGameStatus] = useState<GameStatus>(GameStatus.AUTH_CHOICE);
   const [previousStatus, setPreviousStatus] = useState<GameStatus | null>(null);
@@ -454,7 +506,6 @@ const App: React.FC = () => {
   // Modal States
   const [showHelp, setShowHelp] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   
   // Helper for current translations
   const t = TRANSLATIONS[language];
@@ -481,6 +532,13 @@ const App: React.FC = () => {
         console.error("Session parse error", e);
       }
     }
+    
+    // Load theme
+    const savedTheme = localStorage.getItem('bilmece_theme');
+    if (savedTheme && THEMES[savedTheme as ThemeKey]) {
+      setTheme(savedTheme as ThemeKey);
+    }
+
     refreshLeaderboard();
   }, []);
 
@@ -495,6 +553,12 @@ const App: React.FC = () => {
       loadAllQuestions();
     }
   }, [gameStatus, adminTab]);
+
+  const changeTheme = (newTheme: ThemeKey) => {
+    setTheme(newTheme);
+    localStorage.setItem('bilmece_theme', newTheme);
+    playSound('click');
+  };
 
   const loadAllQuestions = async () => {
     const qs = await dbService.getQuestions();
@@ -702,7 +766,6 @@ const App: React.FC = () => {
              language: 'az'
            });
         });
-        // Seed EN
         const qsEn = getQuestionsByTopic(topic.id, [], 'en');
         qsEn.forEach(q => {
             allStaticQuestions.push({
@@ -823,7 +886,7 @@ const App: React.FC = () => {
     setCurrentQuestionIndex(0);
     setLifelines({ fiftyFifty: true, askAudience: true, askAI: true });
     resetQuestionState(0);
-    playSound('win'); // Start sound
+    playSound('win');
   };
 
   const resetQuestionState = (levelIndex: number) => {
@@ -915,56 +978,18 @@ const App: React.FC = () => {
 
   // --- RENDER FUNCTIONS ---
   
-  const renderSettingsModal = () => (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[90] backdrop-blur-sm animate-fade-in">
-      <div className="bg-[#000030]/95 p-6 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-sm relative">
-        <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={24} /></button>
-        <div className="flex items-center gap-2 mb-6 text-white border-b border-slate-700 pb-3">
-           <Settings size={24} className="text-gray-300" />
-           <h2 className="text-xl font-black">{t.settings}</h2>
-        </div>
-        
-        <div className="space-y-6">
-           <div className="flex items-center justify-between">
-              <span className="text-slate-200 font-bold flex items-center gap-2"><Volume2 size={20} className="text-blue-400"/> {t.sound}</span>
-              <button 
-                onClick={() => { setSoundEnabled(!soundEnabled); playSound('click'); }}
-                className={`w-14 h-8 rounded-full flex items-center p-1 transition-colors ${soundEnabled ? 'bg-green-600 justify-end' : 'bg-slate-600 justify-start'}`}
-              >
-                <div className="w-6 h-6 bg-white rounded-full shadow-md"></div>
-              </button>
-           </div>
-           
-           <div className="flex flex-col gap-2">
-              <span className="text-slate-200 font-bold flex items-center gap-2"><Globe size={20} className="text-purple-400"/> {t.language}</span>
-              <div className="flex gap-2">
-                 <button 
-                   onClick={() => setLanguage('az')} 
-                   className={`flex-1 py-2 rounded-lg font-bold border-2 transition-all ${language === 'az' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800 border-slate-600 text-slate-400'}`}
-                 >
-                   Azərbaycan
-                 </button>
-                 <button 
-                   onClick={() => setLanguage('en')} 
-                   className={`flex-1 py-2 rounded-lg font-bold border-2 transition-all ${language === 'en' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800 border-slate-600 text-slate-400'}`}
-                 >
-                   English
-                 </button>
-              </div>
-           </div>
-        </div>
-        
-        <Button fullWidth onClick={() => setShowSettings(false)} className="mt-8 bg-blue-700">{t.close}</Button>
-      </div>
-    </div>
-  );
+  const currentTheme = THEMES[theme];
+  const bgClass = currentTheme.bg;
+  const cardClass = `bg-slate-900/80 ${currentTheme.accentColor}/50 border text-white`;
+  const inputClass = "bg-slate-800 border-slate-600 text-white";
 
   const renderHelpModal = () => (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[70] backdrop-blur-sm animate-fade-in">
-      <div className="bg-[#000030] p-6 rounded-2xl w-full max-w-md shadow-2xl border border-teal-500/30 relative overflow-y-auto max-h-[90vh]">
-        <button onClick={() => setShowHelp(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={24} /></button>
+      <div className={`${cardClass} p-6 rounded-2xl w-full max-w-md shadow-2xl bg-[#000030] relative overflow-y-auto max-h-[90vh]`}>
+        <button onClick={() => { playSound('click'); setShowHelp(false); }} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={24} /></button>
         <div className="flex items-center gap-2 mb-4 text-teal-400"><HelpCircle size={28} /><h2 className="text-xl font-black">{t.rulesTitle}</h2></div>
         
+        {/* Game Description */}
         <div className="mb-6 p-3 bg-blue-900/20 rounded-lg border border-blue-500/20">
            <p className="text-slate-300 text-sm font-medium leading-relaxed">{t.gameDescription}</p>
         </div>
@@ -974,15 +999,15 @@ const App: React.FC = () => {
              <p key={idx} className="flex items-start gap-2"><span className="text-yellow-500 font-bold">•</span><span>{rule}</span></p>
            ))}
         </div>
-        <Button onClick={() => setShowHelp(false)} fullWidth className="mt-6 bg-teal-700 hover:bg-teal-600 border-teal-500">{t.understood}</Button>
+        <Button onClick={() => { playSound('click'); setShowHelp(false); }} fullWidth className="mt-6 bg-teal-700 hover:bg-teal-600 border-teal-500">{t.understood}</Button>
       </div>
     </div>
   );
   
   const renderPrivacyModal = () => (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[80] backdrop-blur-sm animate-fade-in">
-      <div className="bg-[#000030] p-6 rounded-2xl w-full max-w-2xl shadow-2xl border border-blue-500/30 relative overflow-y-auto max-h-[90vh]">
-        <button onClick={() => setShowPrivacyModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={24} /></button>
+      <div className={`${cardClass} p-6 rounded-2xl w-full max-w-2xl shadow-2xl bg-[#000030] relative overflow-y-auto max-h-[90vh]`}>
+        <button onClick={() => { playSound('click'); setShowPrivacyModal(false); }} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={24} /></button>
         <div className="flex items-center gap-2 mb-4 text-slate-200 border-b border-slate-700 pb-2">
           <Shield size={24} className="text-blue-400" />
           <h2 className="text-xl font-black">{t.privacyTitle}</h2>
@@ -1000,7 +1025,7 @@ const App: React.FC = () => {
         </div>
 
         <div className="mt-6 pt-4 border-t border-slate-700">
-          <Button onClick={() => setShowPrivacyModal(false)} fullWidth className="bg-blue-900/50 border-blue-500/50 hover:bg-blue-800">{t.close}</Button>
+          <Button onClick={() => { playSound('click'); setShowPrivacyModal(false); }} fullWidth className="bg-blue-900/50 border-blue-500/50 hover:bg-blue-800">{t.close}</Button>
         </div>
       </div>
     </div>
@@ -1009,7 +1034,7 @@ const App: React.FC = () => {
   const renderProfileModal = () => (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-fade-in">
       <div className="bg-[#000030]/90 p-6 rounded-2xl border border-blue-500/50 shadow-2xl w-full max-w-md backdrop-blur-md relative">
-         <button onClick={() => setShowProfileModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={24}/></button>
+         <button onClick={() => { playSound('click'); setShowProfileModal(false); }} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={24}/></button>
          <h2 className="text-xl font-black text-white mb-6">{t.profile}</h2>
          {currentUser && (
            <form onSubmit={handleProfileUpdate} className="space-y-4">
@@ -1045,6 +1070,68 @@ const App: React.FC = () => {
     </div>
   );
 
+  const renderSettings = () => (
+    <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 z-10">
+      <div className="flex justify-between items-center mb-6 shrink-0 bg-slate-900/80 p-4 rounded-xl border border-slate-700">
+         <div className="flex items-center gap-3"><Settings size={32} className="text-gray-300" /><h2 className="text-xl font-black text-white">{t.settings}</h2></div>
+         <Button variant="secondary" onClick={() => { playSound('click'); setGameStatus(GameStatus.AUTH_CHOICE); }} className="py-1 px-3 text-sm h-10 border-slate-600 bg-slate-800"><ArrowLeft size={18} /></Button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto space-y-6">
+        
+        {/* Language Section */}
+        <div className="bg-slate-900/60 p-6 rounded-xl border border-slate-700">
+           <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><Globe size={20} className="text-blue-400" /> {t.language}</h3>
+           <div className="flex gap-4">
+              <button onClick={() => { playSound('click'); setLanguage('az'); }} className={`flex-1 p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${language === 'az' ? 'border-yellow-500 bg-blue-900/30' : 'border-slate-700 bg-slate-800/50 opacity-60 hover:opacity-100'}`}>
+                 <img src="https://flagcdn.com/w40/az.png" alt="AZ" className="w-12 h-8 object-cover rounded shadow-md" />
+                 <span className="font-bold text-white">Azərbaycan</span>
+              </button>
+              <button onClick={() => { playSound('click'); setLanguage('en'); }} className={`flex-1 p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${language === 'en' ? 'border-yellow-500 bg-blue-900/30' : 'border-slate-700 bg-slate-800/50 opacity-60 hover:opacity-100'}`}>
+                 <img src="https://flagcdn.com/w40/gb.png" alt="EN" className="w-12 h-8 object-cover rounded shadow-md" />
+                 <span className="font-bold text-white">English</span>
+              </button>
+           </div>
+        </div>
+
+        {/* Theme Section */}
+        <div className="bg-slate-900/60 p-6 rounded-xl border border-slate-700">
+           <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><Palette size={20} className="text-purple-400" /> {t.theme}</h3>
+           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {(Object.keys(THEMES) as ThemeKey[]).map((key) => {
+                 const th = THEMES[key];
+                 return (
+                    <button 
+                       key={key} 
+                       onClick={() => changeTheme(key)}
+                       className={`p-3 rounded-lg border-2 transition-all text-left flex items-center gap-3 ${theme === key ? 'border-yellow-500 bg-white/10 ring-2 ring-yellow-500/20' : 'border-slate-700 bg-slate-800/50 hover:bg-slate-700'}`}
+                    >
+                       <div className={`w-8 h-8 rounded-full border border-white/20 shadow-inner ${th.bg}`}></div>
+                       <span className="font-medium text-white text-sm">{th.label[language]}</span>
+                    </button>
+                 );
+              })}
+           </div>
+        </div>
+
+        {/* Sound Section */}
+        <div className="bg-slate-900/60 p-6 rounded-xl border border-slate-700 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+              {soundEnabled ? <Volume2 size={24} className="text-green-400" /> : <VolumeX size={24} className="text-red-400" />}
+              <span className="text-white font-bold text-lg">{t.sound}</span>
+           </div>
+           <button 
+              onClick={() => { playSound('click'); setSoundEnabled(!soundEnabled); }}
+              className={`w-14 h-8 rounded-full p-1 transition-colors relative ${soundEnabled ? 'bg-green-600' : 'bg-slate-600'}`}
+           >
+              <div className={`w-6 h-6 bg-white rounded-full shadow-md transition-transform transform ${soundEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+           </button>
+        </div>
+
+      </div>
+    </div>
+  );
+
   const renderAuthChoice = () => {
     const isLoggedIn = !!currentUser;
     const isAdmin = currentUser?.username === 'admin';
@@ -1054,27 +1141,17 @@ const App: React.FC = () => {
     const playerCount = validUsers.length;
 
     return (
-      <div className="flex flex-col h-full w-full relative z-10 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-        {/* Settings Icon */}
-        <div className="absolute top-4 right-4 z-[60]">
-            <button 
-                onClick={() => setShowSettings(true)}
-                className="w-10 h-10 bg-slate-800/50 hover:bg-slate-700 rounded-full flex items-center justify-center border border-slate-600 transition-colors"
-            >
-                <Settings size={20} className="text-slate-300" />
-            </button>
-        </div>
-
+      <div className="flex flex-col h-full w-full relative z-10 overflow-y-auto">
         <div className="flex flex-col min-h-full w-full justify-between">
-            <div className="flex flex-col items-center w-full animate-fade-in-up">
+            <div className="flex flex-col items-center w-full">
                 <div className="flex flex-col items-center justify-center pt-16 md:pt-24 shrink-0 relative z-20 px-4">
                    <div className="scale-105 md:scale-110"><GameLogo size="xl" /></div>
-                   <div className="mt-10 md:mt-12 text-center z-30 px-4 animate-scale-in">
+                   <div className="mt-10 md:mt-12 text-center z-30 px-4">
                      <p className="text-blue-100 text-sm md:text-base font-bold tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t.slogan1}</p>
                      <p className="text-yellow-600 text-lg md:text-xl font-black tracking-widest drop-shadow-[0_2px_10px_rgba(234,179,8,0.5)]">{t.slogan2}</p>
                    </div>
                 </div>
-                <div className="flex justify-between items-center px-6 w-full max-w-sm mx-auto gap-4 mt-4 animate-slide-in-up">
+                <div className="flex justify-between items-center px-6 w-full max-w-sm mx-auto gap-4 mt-4">
                    <div className="flex-1 flex flex-col justify-center px-3 py-2 bg-[#000030]/80 border border-blue-600 rounded-xl shadow-[0_0_10px_rgba(37,99,235,0.3)] min-h-[50px] relative overflow-hidden group">
                       <div className="absolute inset-0 bg-blue-600/10 group-hover:bg-blue-600/20 transition-colors"></div>
                       <div className="flex items-center gap-2 relative z-10">
@@ -1092,53 +1169,56 @@ const App: React.FC = () => {
                 </div>
             </div>
             
-            <div className="flex-1 flex flex-col items-center justify-center w-full px-4 py-2 min-h-[60px] animate-fade-in">
+            <div className="flex-1 flex flex-col items-center justify-center w-full px-4 py-2 min-h-[60px]">
                {isLoggedIn && (
-                  <div className="flex items-center justify-between w-full max-w-xs mx-auto bg-[#000040]/80 p-3 rounded-xl border border-blue-500/30 backdrop-blur-md shadow-lg mb-2 gap-3">
+                  <div className="flex items-center justify-between w-full max-w-xs mx-auto bg-[#000040]/80 p-3 rounded-xl border border-blue-500/30 backdrop-blur-md shadow-lg animate-fade-in mb-2 gap-3">
                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shrink-0 border border-blue-400 shadow-inner">
+                        <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shrink-0 border border-blue-400 shadow-inner relative">
                            {currentUser.name.charAt(0).toUpperCase()}
+                           {currentUser.streak > 1 && (
+                             <div className="absolute -top-1 -right-1 bg-orange-600 rounded-full w-4 h-4 flex items-center justify-center border border-orange-400 animate-pulse">
+                               <Flame size={10} className="text-yellow-300" />
+                             </div>
+                           )}
                         </div>
                         <div className="flex flex-col min-w-0">
                            <span className="text-[9px] text-blue-300 uppercase font-bold tracking-wider leading-none mb-1">{t.welcome}</span>
                            <span className="text-sm font-bold text-white truncate leading-none">{currentUser.name}</span>
                         </div>
                      </div>
-                     <div className="flex flex-col items-end gap-1">
-                       <div className="flex items-center gap-1.5 bg-[#000020]/80 px-2 py-1 rounded-lg border border-yellow-500/30 shadow-inner shrink-0">
-                          <Trophy size={12} className="text-yellow-400" />
-                          <span className="font-mono font-bold text-yellow-400 text-xs">{currentUser.totalPoints}</span>
-                       </div>
-                       <div className="flex items-center gap-1">
-                          <Flame size={12} className={currentUser.streak > 1 ? "text-orange-500 fill-orange-500 animate-pulse" : "text-slate-500"} />
-                          <span className="text-[10px] text-slate-300 font-bold">{currentUser.streak || 1} {t.streak}</span>
-                       </div>
+                     <div className="flex items-center gap-2">
+                        {currentUser.streak > 1 && (
+                          <div className="flex items-center gap-1 bg-orange-900/50 px-2 py-1 rounded-md border border-orange-500/30">
+                            <Flame size={12} className="text-orange-400" />
+                            <span className="text-xs font-bold text-orange-200">{currentUser.streak}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5 bg-[#000020]/80 px-3 py-1.5 rounded-lg border border-yellow-500/30 shadow-inner shrink-0">
+                           <Trophy size={14} className="text-yellow-400" />
+                           <span className="font-mono font-bold text-yellow-400 text-sm">{currentUser.totalPoints}</span>
+                        </div>
                      </div>
                   </div>
                )}
             </div>
 
-            <div className="w-full px-6 pb-4 md:pb-6 flex flex-col items-center shrink-0 max-w-xs mx-auto z-20 animate-slide-in-up">
-               {/* Language Switcher Inline */}
-               <div className="flex gap-2 mb-4 w-full justify-center">
-                  <button onClick={() => setLanguage('az')} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${language === 'az' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800/50 border-slate-600 text-slate-400'}`}>AZ</button>
-                  <button onClick={() => setLanguage('en')} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${language === 'en' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800/50 border-slate-600 text-slate-400'}`}>EN</button>
-               </div>
-
+            <div className="w-full px-6 pb-4 md:pb-6 flex flex-col items-center shrink-0 max-w-xs mx-auto z-20">
                <div className="w-full flex flex-col gap-3">
                {!isLoggedIn ? (
                  <>
                    <Button fullWidth onClick={() => { playSound('click'); setGameStatus(GameStatus.LOGIN); }} className={`${btnBase} bg-blue-900/80 border-blue-500 text-white`}><LogIn size={20} /> {t.login}</Button>
                    <Button fullWidth onClick={() => { playSound('click'); setGameStatus(GameStatus.REGISTER); }} className={`${btnBase} bg-fuchsia-900/80 border-fuchsia-500 text-white`}><UserPlus size={20} /> {t.register}</Button>
-                   <Button fullWidth onClick={() => { playSound('click'); setShowHelp(true); }} className={`${btnBase} bg-teal-900/80 border-teal-500 text-white`}><HelpCircle size={20} /> {t.help}</Button>
+                   <Button fullWidth onClick={() => { playSound('click'); setGameStatus(GameStatus.SETTINGS); }} className={`${btnBase} bg-indigo-900/80 border-indigo-500 text-white`}><Settings size={20} /> {t.settings}</Button>
                    <Button fullWidth onClick={() => { playSound('click'); setGameStatus(GameStatus.LEADERBOARD); }} className={`${btnBase} bg-amber-900/80 border-amber-500 text-white`}><Trophy size={20} /> {t.leaderboard}</Button>
+                   <Button fullWidth onClick={() => { playSound('click'); setShowHelp(true); }} className={`${btnBase} bg-teal-900/80 border-teal-500 text-white`}><HelpCircle size={20} /> {t.help}</Button>
                  </>
                ) : (
                  <>
-                   <Button fullWidth onClick={() => startGameWithTopic('COGRAFIYA')} className={`${btnBase} bg-green-900/80 border-green-500 text-white`}><Play size={22} fill="currentColor" /> {t.startGame}</Button>
-                   {isAdmin && <Button fullWidth onClick={() => setGameStatus(GameStatus.ADMIN_DASHBOARD)} className={`${btnBase} bg-gray-800/80 border-gray-500 text-white`}><Wrench size={20} /> {t.adminPanel}</Button>}
-                   <Button fullWidth onClick={() => setGameStatus(GameStatus.LEADERBOARD)} className={`${btnBase} bg-amber-900/80 border-amber-500 text-white`}><Trophy size={20} /> {t.leaderboard}</Button>
-                   <Button fullWidth onClick={() => setShowHelp(true)} className={`${btnBase} bg-teal-900/80 border-teal-500 text-white`}><HelpCircle size={20} /> {t.help}</Button>
+                   <Button fullWidth onClick={() => { playSound('click'); setGameStatus(GameStatus.TOPIC_SELECTION); }} className={`${btnBase} bg-green-900/80 border-green-500 text-white`}><Play size={22} fill="currentColor" /> {t.startGame}</Button>
+                   {isAdmin && <Button fullWidth onClick={() => { playSound('click'); setGameStatus(GameStatus.ADMIN_DASHBOARD); }} className={`${btnBase} bg-gray-800/80 border-gray-500 text-white`}><Wrench size={20} /> {t.adminPanel}</Button>}
+                   <Button fullWidth onClick={() => { playSound('click'); setGameStatus(GameStatus.SETTINGS); }} className={`${btnBase} bg-indigo-900/80 border-indigo-500 text-white`}><Settings size={20} /> {t.settings}</Button>
+                   <Button fullWidth onClick={() => { playSound('click'); setGameStatus(GameStatus.LEADERBOARD); }} className={`${btnBase} bg-amber-900/80 border-amber-500 text-white`}><Trophy size={20} /> {t.leaderboard}</Button>
+                   <Button fullWidth onClick={() => { playSound('click'); setShowHelp(true); }} className={`${btnBase} bg-teal-900/80 border-teal-500 text-white`}><HelpCircle size={20} /> {t.help}</Button>
                    <Button fullWidth onClick={handleLogout} className={`${btnBase} bg-red-900/60 border-red-500/80 text-red-100`}><LogOut size={20} /> {t.logout}</Button>
                  </>
                )}
@@ -1149,8 +1229,6 @@ const App: React.FC = () => {
                </div>
             </div>
         </div>
-        {showHelp && renderHelpModal()}
-        {showSettings && renderSettingsModal()}
       </div>
     );
   };
@@ -1158,7 +1236,7 @@ const App: React.FC = () => {
   const renderLeaderboard = () => {
     const sortedUsers = [...allUsers].filter(u => u.username !== 'admin').sort((a, b) => b.totalPoints - a.totalPoints);
     return (
-      <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 z-10 animate-fade-in">
+      <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 z-10">
         <div className="flex justify-between items-center mb-6 shrink-0 bg-slate-900/80 p-4 rounded-xl border border-slate-700">
            <div className="flex items-center gap-3"><Trophy size={32} className="text-yellow-500" /><h2 className="text-xl font-black text-white">{t.leaderboardTitle}</h2></div>
            <Button variant="secondary" onClick={() => { playSound('click'); setGameStatus(previousStatus || GameStatus.AUTH_CHOICE); }} className="py-1 px-3 text-sm h-10 border-slate-600 bg-slate-800"><ArrowLeft size={18} /></Button>
@@ -1180,139 +1258,8 @@ const App: React.FC = () => {
     );
   };
 
-  const renderAdminDashboard = () => {
-    const filteredUsers = allUsers.filter(u => u.username !== 'admin' && (u.username.toLowerCase().includes(adminSearch.toLowerCase()) || u.name.toLowerCase().includes(adminSearch.toLowerCase())));
-    const filteredQuestions = adminQuestions.filter(q => q.text.toLowerCase().includes(adminSearch.toLowerCase()));
-
-    return (
-      <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 z-10 overflow-hidden">
-        <header className="flex justify-between items-center mb-4 shrink-0 bg-slate-900/80 p-4 rounded-xl border border-slate-700">
-           <div className="flex items-center gap-3"><Wrench size={32} className="text-gray-300" /><h2 className="text-xl font-black text-white">{t.adminPanel}</h2></div>
-           <Button variant="secondary" onClick={() => setGameStatus(GameStatus.AUTH_CHOICE)} className="py-1 px-3 text-sm h-10 border-slate-600 bg-slate-800">{t.logout}</Button>
-        </header>
-
-        <div className="flex gap-2 mb-4 shrink-0">
-           <button onClick={() => setAdminTab('users')} className={`flex-1 p-2 rounded-lg font-bold transition-colors ${adminTab === 'users' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>İstifadəçilər</button>
-           <button onClick={() => setAdminTab('questions')} className={`flex-1 p-2 rounded-lg font-bold transition-colors ${adminTab === 'questions' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>Suallar</button>
-        </div>
-
-        <div className="mb-4 relative shrink-0">
-          <input type="text" placeholder="Axtarış..." value={adminSearch} onChange={(e) => setAdminSearch(e.target.value)} className="w-full bg-slate-800 border-slate-600 text-white p-3 pl-10 rounded-lg border font-medium" />
-          <Search className="absolute left-3 top-3.5 text-slate-400" size={20} />
-        </div>
-
-        {adminTab === 'users' ? (
-          <div className="flex-1 min-h-0 overflow-y-auto bg-slate-900/60 border border-slate-700 rounded-xl p-4 space-y-3">
-            {filteredUsers.map(user => (
-              <div key={user.username} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-800/80 rounded-lg border border-slate-600 gap-4">
-                 <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-lg">{user.name}</span>
-                      <span className="text-xs text-blue-300 px-2 py-0.5 bg-blue-900/50 rounded-full font-medium">{user.username}</span>
-                    </div>
-                    <div className="text-sm text-slate-400 mt-1 font-medium">{t.totalPoints}: <span className="text-green-400 font-mono font-bold">{user.totalPoints}</span> | {t.password}: <span className="text-red-300 font-mono">{user.password}</span></div>
-                 </div>
-                 <div className="flex gap-2">
-                   <button onClick={() => startEditingUser(user)} className="p-2 bg-blue-700 text-white rounded-lg hover:bg-blue-600 transition-colors"><Edit size={16} /></button>
-                   <button onClick={() => handleDeleteUser(user.username)} className="p-2 bg-red-700 text-white rounded-lg hover:bg-red-600 transition-colors"><Trash2 size={16} /></button>
-                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-             <div className="flex gap-2 mb-2 shrink-0">
-                <Button onClick={() => openQuestionModal()} className="flex-1 bg-green-700 text-sm py-2"><PlusCircle size={16} className="mr-2"/> Yeni Sual</Button>
-                <Button onClick={handleSeedQuestions} className="flex-1 bg-yellow-700 text-sm py-2"><Database size={16} className="mr-2"/> Bazanı Doldur</Button>
-             </div>
-             <div className="flex-1 min-h-0 overflow-y-auto bg-slate-900/60 border border-slate-700 rounded-xl p-4 space-y-3">
-               {filteredQuestions.map((q, idx) => (
-                 <div key={q.id || idx} className="p-4 bg-slate-800/80 rounded-lg border border-slate-600">
-                    <div className="flex justify-between items-start mb-2">
-                       <span className="text-xs font-bold text-blue-300 bg-blue-900/30 px-2 py-1 rounded uppercase mr-2">{q.topic}</span>
-                       <span className={`text-xs font-bold px-2 py-1 rounded uppercase ${q.language === 'en' ? 'bg-purple-900/30 text-purple-300' : 'bg-yellow-900/30 text-yellow-300'}`}>{q.language || 'az'}</span>
-                       <div className="flex gap-2 ml-auto">
-                          <button onClick={() => openQuestionModal(q)} className="text-blue-400 hover:text-white"><Edit size={16}/></button>
-                          <button onClick={() => handleDeleteQuestion(q.id as string)} className="text-red-400 hover:text-white"><Trash2 size={16}/></button>
-                       </div>
-                    </div>
-                    <p className="text-white font-bold mb-2">{q.text}</p>
-                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 font-medium">
-                       {q.options.map((opt, i) => (
-                         <span key={i} className={i === q.correctAnswerIndex ? "text-green-400 font-bold" : ""}>{opt}</span>
-                       ))}
-                    </div>
-                 </div>
-               ))}
-             </div>
-          </div>
-        )}
-        <AdSenseBanner dataAdSlot="1234567890" dataAdFormat="horizontal" />
-
-        {/* User Edit Modal */}
-        {userToEdit && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-             <div className="bg-[#000030] p-6 rounded-2xl w-full max-w-md shadow-2xl">
-                <h3 className="text-xl font-bold mb-4 text-white">Redaktə et: {userToEdit.username}</h3>
-                <form onSubmit={handleAdminSaveUser} className="space-y-3">
-                   <div><label className="text-xs text-blue-300 block mb-1">{t.nameSurname}</label><input type="text" value={adminEditForm.name} onChange={e => setAdminEditForm({...adminEditForm, name: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" /></div>
-                   <div className="flex gap-2">
-                      <div className="flex-1"><label className="text-xs text-blue-300 block mb-1">{t.age}</label><input type="number" value={adminEditForm.age} onChange={e => setAdminEditForm({...adminEditForm, age: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" /></div>
-                      <div className="flex-1"><label className="text-xs text-blue-300 block mb-1">{t.gender}</label><select value={adminEditForm.gender} onChange={e => setAdminEditForm({...adminEditForm, gender: e.target.value as any})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium"><option value="Kişi">{t.male}</option><option value="Qadın">{t.female}</option></select></div>
-                   </div>
-                   <div><label className="text-xs text-red-300 block mb-1">{t.password}</label><input type="text" value={adminEditForm.password} onChange={e => setAdminEditForm({...adminEditForm, password: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" /></div>
-                   <div><label className="text-xs text-green-300 block mb-1">{t.totalPoints}</label><input type="number" value={adminEditForm.totalPoints} onChange={e => setAdminEditForm({...adminEditForm, totalPoints: Number(e.target.value)})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" /></div>
-                   <div className="flex gap-2 mt-4"><Button type="submit" fullWidth className="bg-green-700">{t.save}</Button><Button type="button" fullWidth variant="secondary" onClick={() => setUserToEdit(null)}>Ləğv et</Button></div>
-                </form>
-             </div>
-          </div>
-        )}
-
-        {/* Question Add/Edit Modal */}
-        {isAddingQuestion && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-             <div className="bg-[#000030] p-6 rounded-2xl w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
-                <h3 className="text-xl font-bold mb-4 text-white">{questionToEdit ? "Sualı Düzəlt" : "Yeni Sual"}</h3>
-                <form onSubmit={handleSaveQuestion} className="space-y-3">
-                   <div><label className="text-xs text-blue-300 block mb-1">Sual Mətni</label><textarea value={questionForm.text} onChange={e => setQuestionForm({...questionForm, text: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" required /></div>
-                   <div className="grid grid-cols-2 gap-2">
-                      <div><label className="text-xs text-slate-400">Variant A</label><input type="text" value={questionForm.optionA} onChange={e => setQuestionForm({...questionForm, optionA: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" required /></div>
-                      <div><label className="text-xs text-slate-400">Variant B</label><input type="text" value={questionForm.optionB} onChange={e => setQuestionForm({...questionForm, optionB: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" required /></div>
-                      <div><label className="text-xs text-slate-400">Variant C</label><input type="text" value={questionForm.optionC} onChange={e => setQuestionForm({...questionForm, optionC: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" required /></div>
-                      <div><label className="text-xs text-slate-400">Variant D</label><input type="text" value={questionForm.optionD} onChange={e => setQuestionForm({...questionForm, optionD: e.target.value})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium" required /></div>
-                   </div>
-                   <div className="flex gap-2">
-                      <div className="flex-1">
-                         <label className="text-xs text-green-300 block mb-1">Düzgün Variant</label>
-                         <select value={questionForm.correctAnswerIndex} onChange={e => setQuestionForm({...questionForm, correctAnswerIndex: Number(e.target.value)})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium">
-                            <option value={0}>A</option><option value={1}>B</option><option value={2}>C</option><option value={3}>D</option>
-                         </select>
-                      </div>
-                      <div className="flex-1">
-                         <label className="text-xs text-blue-300 block mb-1">Mövzu</label>
-                         <select value={questionForm.topic} onChange={e => setQuestionForm({...questionForm, topic: e.target.value as Topic})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium">
-                            {TOPICS.map(t => <option key={t.id} value={t.id}>{t.label.az}</option>)}
-                         </select>
-                      </div>
-                      <div className="flex-1">
-                         <label className="text-xs text-purple-300 block mb-1">Dil</label>
-                         <select value={questionForm.language} onChange={e => setQuestionForm({...questionForm, language: e.target.value as 'az' | 'en'})} className="w-full bg-slate-800 border-slate-600 text-white p-2 rounded border font-medium">
-                            <option value="az">AZ</option>
-                            <option value="en">EN</option>
-                         </select>
-                      </div>
-                   </div>
-                   <div className="flex gap-2 mt-4"><Button type="submit" fullWidth className="bg-green-700">{t.save}</Button><Button type="button" fullWidth variant="secondary" onClick={() => setIsAddingQuestion(false)}>Ləğv et</Button></div>
-                </form>
-             </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   const renderLogin = () => (
-    <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20 animate-fade-in">
+    <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20">
       <div className="bg-[#000030]/90 p-8 rounded-2xl border border-blue-500/50 shadow-2xl w-full backdrop-blur-md">
          <div className="flex justify-center mb-6"><div className="p-3 bg-blue-900/50 rounded-full border border-blue-400"><LogIn size={32} className="text-blue-300"/></div></div>
          <h2 className="text-2xl font-black text-center text-white mb-6">{t.loginTitle}</h2>
@@ -1322,13 +1269,13 @@ const App: React.FC = () => {
            <div><label className="text-blue-300 text-xs uppercase font-bold ml-1 mb-1 block">{t.password}</label><input type="password" value={authForm.password} onChange={e => setAuthForm({...authForm, password: e.target.value})} className="w-full bg-slate-800/80 border border-blue-500/30 rounded-lg p-3 text-white focus:border-blue-400 outline-none transition-colors font-medium" placeholder={t.password} /></div>
            <Button type="submit" fullWidth disabled={isAuthLoading} className="mt-4">{isAuthLoading ? t.loading : t.login}</Button>
          </form>
-         <div className="mt-6 text-center"><button onClick={() => setGameStatus(GameStatus.AUTH_CHOICE)} className="text-slate-400 hover:text-white text-sm underline font-medium">{t.back}</button></div>
+         <div className="mt-6 text-center"><button onClick={() => { playSound('click'); setGameStatus(GameStatus.AUTH_CHOICE); }} className="text-slate-400 hover:text-white text-sm underline font-medium">{t.back}</button></div>
       </div>
     </div>
   );
 
   const renderRegister = () => (
-    <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20 my-auto animate-fade-in">
+    <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20 my-auto">
       <div className="bg-[#000030]/90 p-6 md:p-8 rounded-2xl border border-fuchsia-500/50 shadow-2xl w-full backdrop-blur-md max-h-[90vh] overflow-y-auto">
          {!registrationSuccess ? (
            <>
@@ -1369,31 +1316,160 @@ const App: React.FC = () => {
                </div>
                <Button type="submit" fullWidth disabled={isAuthLoading} className="mt-4 bg-fuchsia-700 hover:bg-fuchsia-600 border-fuchsia-500">{isAuthLoading ? t.loading : t.registerTitle}</Button>
              </form>
-             <div className="mt-4 text-center"><button onClick={() => setGameStatus(GameStatus.AUTH_CHOICE)} className="text-slate-400 hover:text-white text-sm underline font-medium">{t.back}</button></div>
+             <div className="mt-4 text-center"><button onClick={() => { playSound('click'); setGameStatus(GameStatus.AUTH_CHOICE); }} className="text-slate-400 hover:text-white text-sm underline font-medium">{t.back}</button></div>
            </>
          ) : (
            <div className="text-center py-8 animate-fade-in">
               <div className="mx-auto w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4 text-green-400 border-2 border-green-500"><Check size={32} /></div>
               <h2 className="text-2xl font-black text-white mb-2">{t.registerSuccess}</h2>
               <p className="text-slate-300 mb-6 font-medium">{t.registerSuccessDesc}</p>
-              <Button onClick={finishRegistration} fullWidth className="bg-green-600 border-green-400">{t.continue}</Button>
+              <Button onClick={() => { finishRegistration(); }} fullWidth className="bg-green-600 border-green-400">{t.continue}</Button>
            </div>
          )}
       </div>
     </div>
   );
 
+  const renderAdminDashboard = () => {
+    const filteredUsers = allUsers.filter(u => u.username !== 'admin' && (u.username.toLowerCase().includes(adminSearch.toLowerCase()) || u.name.toLowerCase().includes(adminSearch.toLowerCase())));
+    const filteredQuestions = adminQuestions.filter(q => q.text.toLowerCase().includes(adminSearch.toLowerCase()));
+
+    return (
+      <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 z-10 overflow-hidden">
+        <header className="flex justify-between items-center mb-4 shrink-0 bg-slate-900/80 p-4 rounded-xl border border-slate-700">
+           <div className="flex items-center gap-3"><Wrench size={32} className="text-gray-300" /><h2 className="text-xl font-black text-white">{t.adminPanel}</h2></div>
+           <Button variant="secondary" onClick={() => { playSound('click'); setGameStatus(GameStatus.AUTH_CHOICE); }} className="py-1 px-3 text-sm h-10 border-slate-600 bg-slate-800">{t.logout}</Button>
+        </header>
+
+        <div className="flex gap-2 mb-4 shrink-0">
+           <button onClick={() => { playSound('click'); setAdminTab('users'); }} className={`flex-1 p-2 rounded-lg font-bold transition-colors ${adminTab === 'users' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>İstifadəçilər</button>
+           <button onClick={() => { playSound('click'); setAdminTab('questions'); }} className={`flex-1 p-2 rounded-lg font-bold transition-colors ${adminTab === 'questions' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>Suallar</button>
+        </div>
+
+        <div className="mb-4 relative shrink-0">
+          <input type="text" placeholder="Axtarış..." value={adminSearch} onChange={(e) => setAdminSearch(e.target.value)} className={`w-full p-3 pl-10 rounded-lg border font-medium ${inputClass}`} />
+          <Search className="absolute left-3 top-3.5 text-slate-400" size={20} />
+        </div>
+
+        {adminTab === 'users' ? (
+          <div className="flex-1 min-h-0 overflow-y-auto bg-slate-900/60 border border-slate-700 rounded-xl p-4 space-y-3">
+            {filteredUsers.map(user => (
+              <div key={user.username} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-800/80 rounded-lg border border-slate-600 gap-4">
+                 <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white text-lg">{user.name}</span>
+                      <span className="text-xs text-blue-300 px-2 py-0.5 bg-blue-900/50 rounded-full font-medium">{user.username}</span>
+                    </div>
+                    <div className="text-sm text-slate-400 mt-1 font-medium">{t.totalPoints}: <span className="text-green-400 font-mono font-bold">{user.totalPoints}</span> | {t.password}: <span className="text-red-300 font-mono">{user.password}</span></div>
+                 </div>
+                 <div className="flex gap-2">
+                   <button onClick={() => { playSound('click'); startEditingUser(user); }} className="p-2 bg-blue-700 text-white rounded-lg hover:bg-blue-600 transition-colors"><Edit size={16} /></button>
+                   <button onClick={() => { playSound('click'); handleDeleteUser(user.username); }} className="p-2 bg-red-700 text-white rounded-lg hover:bg-red-600 transition-colors"><Trash2 size={16} /></button>
+                 </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+             <div className="flex gap-2 mb-2 shrink-0">
+                <Button onClick={() => { playSound('click'); openQuestionModal(); }} className="flex-1 bg-green-700 text-sm py-2"><PlusCircle size={16} className="mr-2"/> Yeni Sual</Button>
+                <Button onClick={() => { playSound('click'); handleSeedQuestions(); }} className="flex-1 bg-yellow-700 text-sm py-2"><Database size={16} className="mr-2"/> Bazanı Doldur</Button>
+             </div>
+             <div className="flex-1 min-h-0 overflow-y-auto bg-slate-900/60 border border-slate-700 rounded-xl p-4 space-y-3">
+               {filteredQuestions.map((q, idx) => (
+                 <div key={q.id || idx} className="p-4 bg-slate-800/80 rounded-lg border border-slate-600">
+                    <div className="flex justify-between items-start mb-2">
+                       <span className="text-xs font-bold text-blue-300 bg-blue-900/30 px-2 py-1 rounded uppercase mr-2">{q.topic}</span>
+                       <span className={`text-xs font-bold px-2 py-1 rounded uppercase ${q.language === 'en' ? 'bg-purple-900/30 text-purple-300' : 'bg-yellow-900/30 text-yellow-300'}`}>{q.language || 'az'}</span>
+                       <div className="flex gap-2 ml-auto">
+                          <button onClick={() => { playSound('click'); openQuestionModal(q); }} className="text-blue-400 hover:text-white"><Edit size={16}/></button>
+                          <button onClick={() => { playSound('click'); handleDeleteQuestion(q.id as string); }} className="text-red-400 hover:text-white"><Trash2 size={16}/></button>
+                       </div>
+                    </div>
+                    <p className="text-white font-bold mb-2">{q.text}</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 font-medium">
+                       {q.options.map((opt, i) => (
+                         <span key={i} className={i === q.correctAnswerIndex ? "text-green-400 font-bold" : ""}>{opt}</span>
+                       ))}
+                    </div>
+                 </div>
+               ))}
+             </div>
+          </div>
+        )}
+        <AdSenseBanner dataAdSlot="1234567890" dataAdFormat="horizontal" />
+
+        {userToEdit && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+             <div className={`${cardClass} p-6 rounded-2xl w-full max-w-md shadow-2xl bg-[#000030]`}>
+                <h3 className="text-xl font-bold mb-4 text-white">Redaktə et: {userToEdit.username}</h3>
+                <form onSubmit={handleAdminSaveUser} className="space-y-3">
+                   <div><label className="text-xs text-blue-300 block mb-1">{t.nameSurname}</label><input type="text" value={adminEditForm.name} onChange={e => setAdminEditForm({...adminEditForm, name: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} /></div>
+                   <div className="flex gap-2">
+                      <div className="flex-1"><label className="text-xs text-blue-300 block mb-1">{t.age}</label><input type="number" value={adminEditForm.age} onChange={e => setAdminEditForm({...adminEditForm, age: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} /></div>
+                      <div className="flex-1"><label className="text-xs text-blue-300 block mb-1">{t.gender}</label><select value={adminEditForm.gender} onChange={e => setAdminEditForm({...adminEditForm, gender: e.target.value as any})} className={`w-full p-2 rounded border font-medium ${inputClass}`}><option value="Kişi">{t.male}</option><option value="Qadın">{t.female}</option></select></div>
+                   </div>
+                   <div><label className="text-xs text-red-300 block mb-1">{t.password}</label><input type="text" value={adminEditForm.password} onChange={e => setAdminEditForm({...adminEditForm, password: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} /></div>
+                   <div><label className="text-xs text-green-300 block mb-1">{t.totalPoints}</label><input type="number" value={adminEditForm.totalPoints} onChange={e => setAdminEditForm({...adminEditForm, totalPoints: Number(e.target.value)})} className={`w-full p-2 rounded border font-medium ${inputClass}`} /></div>
+                   <div className="flex gap-2 mt-4"><Button type="submit" fullWidth className="bg-green-700">{t.save}</Button><Button type="button" fullWidth variant="secondary" onClick={() => { playSound('click'); setUserToEdit(null); }}>Ləğv et</Button></div>
+                </form>
+             </div>
+          </div>
+        )}
+
+        {isAddingQuestion && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+             <div className={`${cardClass} p-6 rounded-2xl w-full max-w-lg shadow-2xl bg-[#000030] overflow-y-auto max-h-[90vh]`}>
+                <h3 className="text-xl font-bold mb-4 text-white">{questionToEdit ? "Sualı Düzəlt" : "Yeni Sual"}</h3>
+                <form onSubmit={handleSaveQuestion} className="space-y-3">
+                   <div><label className="text-xs text-blue-300 block mb-1">Sual Mətni</label><textarea value={questionForm.text} onChange={e => setQuestionForm({...questionForm, text: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} required /></div>
+                   <div className="grid grid-cols-2 gap-2">
+                      <div><label className="text-xs text-slate-400">Variant A</label><input type="text" value={questionForm.optionA} onChange={e => setQuestionForm({...questionForm, optionA: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} required /></div>
+                      <div><label className="text-xs text-slate-400">Variant B</label><input type="text" value={questionForm.optionB} onChange={e => setQuestionForm({...questionForm, optionB: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} required /></div>
+                      <div><label className="text-xs text-slate-400">Variant C</label><input type="text" value={questionForm.optionC} onChange={e => setQuestionForm({...questionForm, optionC: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} required /></div>
+                      <div><label className="text-xs text-slate-400">Variant D</label><input type="text" value={questionForm.optionD} onChange={e => setQuestionForm({...questionForm, optionD: e.target.value})} className={`w-full p-2 rounded border font-medium ${inputClass}`} required /></div>
+                   </div>
+                   <div className="flex gap-2">
+                      <div className="flex-1">
+                         <label className="text-xs text-green-300 block mb-1">Düzgün Variant</label>
+                         <select value={questionForm.correctAnswerIndex} onChange={e => setQuestionForm({...questionForm, correctAnswerIndex: Number(e.target.value)})} className={`w-full p-2 rounded border font-medium ${inputClass}`}>
+                            <option value={0}>A</option><option value={1}>B</option><option value={2}>C</option><option value={3}>D</option>
+                         </select>
+                      </div>
+                      <div className="flex-1">
+                         <label className="text-xs text-blue-300 block mb-1">Mövzu</label>
+                         <select value={questionForm.topic} onChange={e => setQuestionForm({...questionForm, topic: e.target.value as Topic})} className={`w-full p-2 rounded border font-medium ${inputClass}`}>
+                            {TOPICS.map(t => <option key={t.id} value={t.id}>{t.label.az}</option>)}
+                         </select>
+                      </div>
+                      <div className="flex-1">
+                         <label className="text-xs text-purple-300 block mb-1">Dil</label>
+                         <select value={questionForm.language} onChange={e => setQuestionForm({...questionForm, language: e.target.value as 'az' | 'en'})} className={`w-full p-2 rounded border font-medium ${inputClass}`}>
+                            <option value="az">AZ</option>
+                            <option value="en">EN</option>
+                         </select>
+                      </div>
+                   </div>
+                   <div className="flex gap-2 mt-4"><Button type="submit" fullWidth className="bg-green-700">{t.save}</Button><Button type="button" fullWidth variant="secondary" onClick={() => { playSound('click'); setIsAddingQuestion(false); }}>Ləğv et</Button></div>
+                </form>
+             </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderTopicSelection = () => (
-    <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 z-10 animate-fade-in">
+    <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 z-10">
       <div className="flex justify-between items-center mb-6 shrink-0 bg-slate-900/80 p-4 rounded-xl border border-slate-700">
          <div className="flex items-center gap-3"><BrainCircuit size={32} className="text-blue-400" /><h2 className="text-xl font-black text-white">{t.topicSelection}</h2></div>
          <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setShowProfileModal(true)} className="py-1 px-3 text-sm h-10 border-slate-600 bg-slate-800"><UserIcon size={18} /></Button>
-            <Button variant="secondary" onClick={() => setGameStatus(GameStatus.AUTH_CHOICE)} className="py-1 px-3 text-sm h-10 border-slate-600 bg-slate-800"><Home size={18} /></Button>
+            <Button variant="secondary" onClick={() => { playSound('click'); setShowProfileModal(true); }} className="py-1 px-3 text-sm h-10 border-slate-600 bg-slate-800"><UserIcon size={18} /></Button>
+            <Button variant="secondary" onClick={() => { playSound('click'); setGameStatus(GameStatus.AUTH_CHOICE); }} className="py-1 px-3 text-sm h-10 border-slate-600 bg-slate-800"><Home size={18} /></Button>
          </div>
       </div>
       <div className="flex-1 min-h-0 grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto pb-4 [&::-webkit-scrollbar]:hidden">
-        {TOPICS.map((topic, i) => {
+        {TOPICS.map((topic) => {
            const Icon = ICON_MAP[topic.icon] || Globe;
            const isCompleted = currentUser?.completedTopics.includes(topic.id);
            let colorClass = "border-blue-500/50 hover:border-blue-400 bg-blue-900/20 hover:bg-blue-900/40";
@@ -1408,10 +1484,9 @@ const App: React.FC = () => {
            return (
              <button
                key={topic.id}
-               onClick={() => { playSound('click'); startGameWithTopic(topic.id); }}
+               onClick={() => startGameWithTopic(topic.id)}
                disabled={isCompleted}
-               style={{ animationDelay: `${i * 0.05}s` }}
-               className={`relative p-6 rounded-2xl border-2 flex flex-col items-center justify-center gap-4 transition-all duration-300 group animate-scale-in ${isCompleted ? 'opacity-50 grayscale cursor-not-allowed border-slate-700 bg-slate-800' : colorClass}`}
+               className={`relative p-6 rounded-2xl border-2 flex flex-col items-center justify-center gap-4 transition-all duration-300 group ${isCompleted ? 'opacity-50 grayscale cursor-not-allowed border-slate-700 bg-slate-800' : colorClass}`}
              >
                 <div className={`p-4 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors`}>
                    <Icon size={40} className="text-white drop-shadow-md" />
@@ -1434,7 +1509,7 @@ const App: React.FC = () => {
     const currentQ = questions[currentQuestionIndex];
     
     return (
-      <div className="flex flex-col h-full w-full relative z-10 max-w-5xl mx-auto md:px-4 animate-fade-in">
+      <div className="flex flex-col h-full w-full relative z-10 max-w-5xl mx-auto md:px-4">
          <div className="flex justify-between items-start p-4 shrink-0">
              <div className="flex gap-2 items-center">
                <button onClick={() => { playSound('click'); setGameStatus(GameStatus.TOPIC_SELECTION); }} className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white border border-slate-600"><ArrowLeft size={20}/></button>
@@ -1444,20 +1519,19 @@ const App: React.FC = () => {
                </div>
              </div>
              <div>
-                <button onClick={() => setShowProfileModal(true)} className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center font-bold text-white border-2 border-purple-400 shadow-lg active:scale-95 transition-transform">
+                <button onClick={() => { playSound('click'); setShowProfileModal(true); }} className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center font-bold text-white border-2 border-purple-400 shadow-lg active:scale-95 transition-transform">
                    {currentUser?.name.charAt(0).toUpperCase()}
                 </button>
              </div>
          </div>
          
          <div className="flex-1 flex flex-col items-center justify-center p-4 w-full max-w-3xl mx-auto">
-             <div className="w-full bg-[#000040] border-4 border-blue-600 rounded-xl p-6 md:p-8 shadow-[0_0_30px_rgba(37,99,235,0.4)] relative mb-6 min-h-[160px] flex items-center justify-center animate-zoom-in">
+             <div className="w-full bg-[#000040] border-4 border-blue-600 rounded-xl p-6 md:p-8 shadow-[0_0_30px_rgba(37,99,235,0.4)] relative mb-6 min-h-[160px] flex items-center justify-center">
                 <div className="absolute -top-6 left-1/2 -translate-x-1/2">
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-4 shadow-xl z-20 bg-[#000040] ${timeLeft <= 10 ? 'border-red-500 text-red-500 animate-pulse' : 'border-blue-500 text-white'}`}>
                       {timeLeft}
                     </div>
                 </div>
-                
                 <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-relaxed text-center">{currentQ.text}</h2>
              </div>
 
@@ -1466,13 +1540,11 @@ const App: React.FC = () => {
                    if (hiddenOptions.includes(idx)) {
                      return <div key={idx} className="h-14 md:h-16"></div>;
                    }
-                   
                    let extraClass = "";
-                   
                    if (selectedAnswerIndex === idx) {
                       if (answerState === AnswerState.SELECTED) extraClass = "bg-yellow-600 border-yellow-400 text-black";
                       else if (answerState === AnswerState.CORRECT) extraClass = "bg-green-600 border-green-400 animate-pulse";
-                      else if (answerState === AnswerState.WRONG) extraClass = "bg-red-600 border-red-400 animate-shake";
+                      else if (answerState === AnswerState.WRONG) extraClass = "bg-red-600 border-red-400";
                    } else if (answerState !== AnswerState.IDLE && idx === currentQ.correctAnswerIndex && answerState !== AnswerState.SELECTED) {
                       if (answerState === AnswerState.WRONG) extraClass = "bg-green-600 border-green-400 opacity-80"; 
                    }
@@ -1483,10 +1555,9 @@ const App: React.FC = () => {
                        onClick={() => handleAnswerSelect(idx)}
                        disabled={answerState !== AnswerState.IDLE}
                        className={`
-                         relative overflow-hidden group border-2 rounded-xl p-3 md:p-4 text-left transition-all duration-200 shadow-md active:scale-95 flex items-center animate-slide-in-up
+                         relative overflow-hidden group border-2 rounded-xl p-3 md:p-4 text-left transition-all duration-200 shadow-md active:scale-95 flex items-center
                          ${extraClass || "bg-slate-800/80 border-slate-600 hover:bg-blue-900/60 hover:border-blue-400 text-white focus:outline-none"}
                        `}
-                       style={{ animationDelay: `${idx * 0.1}s` }}
                      >
                        <span className="font-extrabold text-yellow-500 mr-3 text-lg">{['A','B','C','D'][idx]}:</span>
                        <span className="font-bold text-sm md:text-base">{opt}</span>
@@ -1542,13 +1613,13 @@ const App: React.FC = () => {
          {aiHint && (
             <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
                <div className="bg-[#000030] border-2 border-emerald-500 p-6 rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.4)] max-w-md w-full relative animate-bounce-in">
-                  <button onClick={() => { setAiHint(null); setIsTimerPaused(false); }} className="absolute top-3 right-3 text-slate-400 hover:text-white"><X size={20}/></button>
+                  <button onClick={() => { playSound('click'); setAiHint(null); setIsTimerPaused(false); }} className="absolute top-3 right-3 text-slate-400 hover:text-white"><X size={20}/></button>
                   <div className="flex items-center gap-3 mb-4 text-emerald-400 border-b border-emerald-500/30 pb-3">
                      <BrainCircuit size={32} />
                      <h3 className="text-xl font-black">{t.aiSays}</h3>
                   </div>
                   <p className="text-white text-lg leading-relaxed italic font-medium">"{aiHint}"</p>
-                  <Button onClick={() => { setAiHint(null); setIsTimerPaused(false); }} fullWidth className="mt-6 bg-emerald-700 hover:bg-emerald-600 border-emerald-500">{t.thanks}</Button>
+                  <Button onClick={() => { playSound('click'); setAiHint(null); setIsTimerPaused(false); }} fullWidth className="mt-6 bg-emerald-700 hover:bg-emerald-600 border-emerald-500">{t.thanks}</Button>
                </div>
             </div>
          )}
@@ -1557,7 +1628,7 @@ const App: React.FC = () => {
   };
 
   const renderProfile = () => (
-     <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20 animate-fade-in">
+     <div className="flex flex-col items-center justify-center min-h-full p-6 w-full max-w-md mx-auto relative z-20">
       <div className="bg-[#000030]/90 p-8 rounded-2xl border border-blue-500/50 shadow-2xl w-full backdrop-blur-md">
          <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-black text-white">{t.profile}</h2>
@@ -1599,6 +1670,7 @@ const App: React.FC = () => {
 
   const renderGameOver = (isWin: boolean) => (
      <div className="flex flex-col items-center justify-center h-full w-full p-6 relative z-30">
+        {isWin && <Confetti />}
         <div className={`p-8 rounded-3xl border-4 shadow-[0_0_50px_rgba(0,0,0,0.5)] max-w-lg w-full text-center backdrop-blur-md animate-scale-in ${isWin ? 'bg-gradient-to-b from-green-900/90 to-green-950/95 border-green-500' : 'bg-gradient-to-b from-red-900/90 to-red-950/95 border-red-500'}`}>
            <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center border-4 mb-6 shadow-xl ${isWin ? 'bg-green-800 border-green-400 text-green-200' : 'bg-red-800 border-red-400 text-red-200'}`}>
               {isWin ? <Trophy size={48} /> : <LogOut size={48} className="ml-1" />}
@@ -1626,16 +1698,21 @@ const App: React.FC = () => {
            </div>
         </div>
         <AdSenseBanner dataAdSlot="1234567890" dataAdFormat="rectangle" />
-        {isWin && <Confetti />}
      </div>
   );
 
   return (
-    <div className="fixed inset-0 h-[100dvh] w-full overflow-hidden flex flex-col transition-colors duration-500 bg-[#020220]">
+    <div className={`fixed inset-0 h-[100dvh] w-full overflow-hidden flex flex-col transition-colors duration-500 ${bgClass}`}>
       <BackgroundParticles />
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] bg-[radial-gradient(circle,rgba(30,64,175,0.25)_0%,transparent_65%)] blur-xl animate-pulse-slow"></div>
-         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80vw] h-[60vh] bg-[conic-gradient(from_180deg_at_50%_100%,transparent_35%,rgba(59,130,246,0.15)_50%,transparent_65%)] blur-3xl"></div>
+         <div 
+           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] blur-xl animate-pulse-slow"
+           style={{ background: `radial-gradient(circle, ${currentTheme.glowColor} 0%, transparent 65%)` }}
+         ></div>
+         <div 
+           className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80vw] h-[60vh] blur-3xl"
+           style={{ background: `conic-gradient(from 180deg at 50% 100%, transparent 35%, ${currentTheme.conicColor} 50%, transparent 65%)` }}
+         ></div>
          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]"></div>
          <div className="absolute inset-0 bg-[radial-gradient(transparent_40%,#020210_100%)]"></div>
       </div>
@@ -1647,12 +1724,12 @@ const App: React.FC = () => {
          {gameStatus === GameStatus.TOPIC_SELECTION && renderTopicSelection()}
          {gameStatus === GameStatus.PLAYING && renderPlaying()}
          {gameStatus === GameStatus.PROFILE && renderProfile()}
+         {gameStatus === GameStatus.SETTINGS && renderSettings()}
          {gameStatus === GameStatus.ADMIN_DASHBOARD && renderAdminDashboard()}
          {(gameStatus === GameStatus.WON || gameStatus === GameStatus.LOST) && renderGameOver(gameStatus === GameStatus.WON)}
          {showProfileModal && renderProfileModal()}
          {showPrivacyModal && renderPrivacyModal()}
          {showHelp && renderHelpModal()}
-         {showSettings && renderSettingsModal()}
       </div>
     </div>
   );
