@@ -175,7 +175,7 @@ const TRANSLATIONS = {
     rulesTitle: "Kömək və Qaydalar",
     rules: [
         "Oyuna başlamaq üçün qeydiyyatdan keçin.",
-        "Hər mövzuda 15 sual var (5 asan, 5 orta, 5 çətin).",
+        "Hər mövzuda 30 sual var (10 asan, 10 orta, 10 çətin).",
         "Hər düzgün cavab 50 Xal qazandırır.",
         "Hər sual üçün 30 saniyə vaxtınız var.",
         "3 köməkçi vasitə: 50/50, Auditoriya və Bilgə İnsan (AI)."
@@ -262,7 +262,7 @@ const TRANSLATIONS = {
     rulesTitle: "Help & Rules",
     rules: [
         "Register to start playing.",
-        "Each topic has 15 questions (5 easy, 5 medium, 5 hard).",
+        "Each topic has 30 questions (10 easy, 10 medium, 10 hard).",
         "Each correct answer gives 50 Points.",
         "You have 30 seconds for each question.",
         "3 Lifelines: 50/50, Audience, and Wise AI."
@@ -523,6 +523,7 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log("App Mounted - Version 2.0");
     const savedUser = localStorage.getItem('bilmece_user_session');
     if (savedUser) {
       try {
@@ -639,7 +640,6 @@ const App: React.FC = () => {
     const foundUser = users.find(u => u.username === authForm.username && u.password === authForm.password);
     
     if (foundUser) {
-      // Streak Logic
       const today = new Date().toISOString().split('T')[0];
       const lastLogin = foundUser.lastLoginDate;
       let newStreak = foundUser.streak || 0;
@@ -655,13 +655,11 @@ const App: React.FC = () => {
           newStreak = 1;
         }
         
-        // Update user streak in DB
         const updatedUser = { ...foundUser, streak: newStreak, lastLoginDate: today };
         await dbService.updateUser(updatedUser.username, { streak: newStreak, lastLoginDate: today });
         setCurrentUser(updatedUser);
         localStorage.setItem('bilmece_user_session', JSON.stringify(updatedUser));
       } else {
-        // Already logged in today
         setCurrentUser(foundUser);
         localStorage.setItem('bilmece_user_session', JSON.stringify(foundUser));
       }
@@ -857,22 +855,35 @@ const App: React.FC = () => {
     let gameQuestions: Question[] = [];
     const shuffle = (arr: any[]) => [...arr].sort(() => 0.5 - Math.random());
 
+    // Fallback to local questions if DB is empty
+    if (rawQuestions.length === 0) {
+      // Use explicit shuffling logic for local data too
+      // Note: getQuestionsByTopic now attaches 'difficulty' property
+      rawQuestions = getQuestionsByTopic(topic, currentUser?.seenQuestions || [], language);
+    }
+
     if (rawQuestions.length > 0) {
        const easy = rawQuestions.filter(q => q.difficulty === 'easy');
        const medium = rawQuestions.filter(q => q.difficulty === 'medium');
        const hard = rawQuestions.filter(q => q.difficulty === 'hard');
 
-       if (easy.length >= 5 && medium.length >= 5 && hard.length >= 5) {
-          gameQuestions = [
-            ...shuffle(easy).slice(0, 5),
-            ...shuffle(medium).slice(0, 5),
-            ...shuffle(hard).slice(0, 5)
-          ];
+       // Try to get 10 of each (or 5 if not enough, fallback logic)
+       // The user requested 10/10/10 = 30 questions
+       const easyCount = Math.min(easy.length, 10);
+       const mediumCount = Math.min(medium.length, 10);
+       const hardCount = Math.min(hard.length, 10);
+       
+       // Ensure at least some questions exist
+       if (easy.length > 0 && medium.length > 0 && hard.length > 0) {
+           gameQuestions = [
+             ...shuffle(easy).slice(0, easyCount),
+             ...shuffle(medium).slice(0, mediumCount),
+             ...shuffle(hard).slice(0, hardCount)
+           ];
        } else {
-          gameQuestions = shuffle(rawQuestions).slice(0, 15);
+           // Fallback: just shuffle everything if difficulty tags are missing or weird structure
+           gameQuestions = shuffle(rawQuestions).slice(0, 30);
        }
-    } else {
-       gameQuestions = getQuestionsByTopic(topic, currentUser?.seenQuestions || [], language);
     }
 
     if (gameQuestions.length === 0) {
@@ -1225,7 +1236,7 @@ const App: React.FC = () => {
                </div>
                
                <div className="text-[11px] text-blue-200/60 mt-4 font-mono text-center pb-2">
-                  <div>© 2025 by Aqil Muradov | Gemini 3</div>
+                  <div>© 2025 by Aqil Muradov | Gemini 3 | v2.0</div>
                </div>
             </div>
         </div>
